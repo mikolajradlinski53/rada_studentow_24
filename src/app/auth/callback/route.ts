@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  const next = searchParams.get('next') ?? '/sessions';
+  const next = searchParams.get('next') ?? '/';
 
   const cookieStore = await cookies();
   const supabase = createServerClient(

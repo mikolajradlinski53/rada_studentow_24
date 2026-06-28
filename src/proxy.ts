@@ -41,10 +41,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login
+  // Redirect authenticated users away from login (root resolves their default org)
   if (user && request.nextUrl.pathname === '/login') {
     const url = request.nextUrl.clone();
-    url.pathname = '/sessions';
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
