@@ -17,7 +17,7 @@ const VOTE_RESULT_LABEL: Record<NonNullable<Vote['result']>, string> = {
   no_quorum: 'Brak kworum',
 };
 
-export default function LiveSessionPage({ params }: { params: Promise<{ id: string }> }) {
+export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
   const [sessionId, setSessionId] = useState<string>('');
   const [session, setSession] = useState<Session | null>(null);
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);

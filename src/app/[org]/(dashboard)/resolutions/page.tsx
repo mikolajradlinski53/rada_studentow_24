@@ -1,5 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
 import { clsx } from 'clsx';
+import { getOrgContext } from '@/lib/org';
 import type { ResolutionStatus } from '@/types/database';
 
 const STATUS_LABELS: Record<ResolutionStatus, { label: string; color: string }> = {
@@ -9,12 +11,18 @@ const STATUS_LABELS: Record<ResolutionStatus, { label: string; color: string }> 
   revoked: { label: 'Uchylona', color: 'bg-red-900/50 text-red-300' },
 };
 
-export default async function ResolutionsPage() {
+export default async function ResolutionsPage({ params }: { params: Promise<{ org: string }> }) {
+  const { org } = await params;
+  const ctx = await getOrgContext(org);
+  if (!ctx) notFound();
+
   const supabase = await createServerSupabase();
 
+  // Scope to this org's active term (isolation).
   const { data: resolutions } = await supabase
     .from('resolutions')
     .select('*, session:sessions(title)')
+    .eq('term_id', ctx.termId)
     .order('number', { ascending: false });
 
   return (

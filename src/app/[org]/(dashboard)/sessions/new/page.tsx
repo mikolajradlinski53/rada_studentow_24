@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function NewSessionPage() {
   const router = useRouter();
+  const { org: orgSlug } = useParams<{ org: string }>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,33 +18,33 @@ export default function NewSessionPage() {
     const form = new FormData(e.currentTarget);
     const supabase = createClient();
 
-    // Get user's active mandate to find organ/term
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: mandate } = await supabase
-      .from('mandates')
-      .select('term_id, terms(organ_id)')
-      .eq('profile_id', user.id)
+    // Active term + organ of THIS org (scoped by slug), so a multi-org user
+    // always creates the session in the org whose page they're on.
+    const { data: term } = await supabase
+      .from('terms')
+      .select('id, organ_id, organs!inner(org_id, organizations!inner(slug))')
+      .eq('organs.organizations.slug', orgSlug)
       .eq('is_active', true)
       .limit(1)
       .maybeSingle();
 
-    if (!mandate) {
-      setError('Brak aktywnego mandatu');
+    if (!term) {
+      setError('Brak aktywnej kadencji dla tej organizacji');
       setLoading(false);
       return;
     }
 
-    const organId = (mandate as any).terms?.organ_id;
     const scheduledDate = form.get('date') as string;
     const scheduledTime = form.get('time') as string;
 
     const { data: session, error: insertError } = await supabase
       .from('sessions')
       .insert({
-        organ_id: organId,
-        term_id: mandate.term_id,
+        organ_id: term.organ_id,
+        term_id: term.id,
         title: form.get('title') as string,
         session_type: form.get('type') as string,
         mode: form.get('mode') as string,
@@ -62,7 +63,7 @@ export default function NewSessionPage() {
       return;
     }
 
-    router.push(`/sessions/${session.id}`);
+    router.push(`/${orgSlug}/sessions/${session.id}`);
   };
 
   return (

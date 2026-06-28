@@ -1,8 +1,10 @@
 import { createServerSupabase } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { clsx } from 'clsx';
+import { getOrgContext } from '@/lib/org';
 import type { SessionStatus } from '@/types/database';
 
 const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string }> = {
@@ -14,25 +16,21 @@ const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string }> = {
   archived: { label: 'Archiwum', color: 'bg-zinc-800 text-zinc-500' },
 };
 
-export default async function SessionsPage() {
+export default async function SessionsPage({ params }: { params: Promise<{ org: string }> }) {
+  const { org } = await params;
+  const ctx = await getOrgContext(org);
+  if (!ctx) notFound();
+
   const supabase = await createServerSupabase();
 
+  // Scope sessions to THIS org's organ (isolation: no cross-org rows leak in).
   const { data: sessions } = await supabase
     .from('sessions')
     .select('*, organ:organs(short_name), chair_profile:profiles!sessions_chaired_by_fkey(full_name)')
+    .eq('organ_id', ctx.organId)
     .order('scheduled_at', { ascending: false });
 
-  // Check if user can create sessions (chair or admin)
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: mandate } = await supabase
-    .from('mandates')
-    .select('role')
-    .eq('profile_id', user?.id ?? '')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
-
-  const canCreate = mandate?.role === 'admin' || mandate?.role === 'chair';
+  const canCreate = ctx.role === 'admin' || ctx.role === 'chair';
 
   return (
     <div>
@@ -45,7 +43,7 @@ export default async function SessionsPage() {
         </div>
         {canCreate && (
           <Link
-            href="/sessions/new"
+            href={`/${org}/sessions/new`}
             className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
           >
             Nowe posiedzenie
@@ -58,7 +56,7 @@ export default async function SessionsPage() {
           <p className="text-sm text-zinc-500">Brak posiedzeń</p>
           {canCreate && (
             <Link
-              href="/sessions/new"
+              href={`/${org}/sessions/new`}
               className="mt-3 inline-block text-sm text-indigo-400 hover:text-indigo-300"
             >
               Utwórz pierwsze posiedzenie
@@ -76,8 +74,8 @@ export default async function SessionsPage() {
                 key={session.id}
                 href={
                   session.status === 'in_progress'
-                    ? `/sessions/${session.id}/live`
-                    : `/sessions/${session.id}`
+                    ? `/${org}/sessions/${session.id}/live`
+                    : `/${org}/sessions/${session.id}`
                 }
                 className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-4 hover:border-zinc-700 hover:bg-zinc-900 transition-colors group"
               >

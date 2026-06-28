@@ -4,13 +4,17 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import Link from 'next/link';
 import { AgendaEditor } from '@/components/session/agenda-editor';
+import { getOrgContext } from '@/lib/org';
 
 export default async function SessionDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ org: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { org, id } = await params;
+  const ctx = await getOrgContext(org);
+  if (!ctx) notFound();
+
   const supabase = await createServerSupabase();
 
   const { data: session } = await supabase
@@ -22,7 +26,8 @@ export default async function SessionDetailPage({
       chair_profile:profiles!sessions_chaired_by_fkey(full_name)
     `)
     .eq('id', id)
-    .single();
+    .eq('organ_id', ctx.organId)
+    .maybeSingle();
 
   if (!session) notFound();
 
@@ -33,15 +38,8 @@ export default async function SessionDetailPage({
     .order('position');
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: mandate } = await supabase
-    .from('mandates')
-    .select('role')
-    .eq('profile_id', user?.id ?? '')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
 
-  const canManage = mandate?.role === 'admin' || mandate?.role === 'chair' || session.chaired_by === user?.id;
+  const canManage = ctx.role === 'admin' || ctx.role === 'chair' || session.chaired_by === user?.id;
   const canStart = canManage && (session.status === 'scheduled' || session.status === 'draft');
   const isLive = session.status === 'in_progress';
 
@@ -51,7 +49,7 @@ export default async function SessionDetailPage({
     <div>
       {/* Header */}
       <div className="mb-8">
-        <Link href="/sessions" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+        <Link href={`/${org}/sessions`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
           ← Posiedzenia
         </Link>
         <h1 className="mt-2 text-xl font-semibold text-zinc-100">
@@ -67,11 +65,11 @@ export default async function SessionDetailPage({
         {/* Action buttons */}
         <div className="mt-4 flex gap-2">
           {canStart && (
-            <StartSessionButton sessionId={session.id} />
+            <StartSessionButton sessionId={session.id} org={org} />
           )}
           {isLive && (
             <Link
-              href={`/sessions/${session.id}/live`}
+              href={`/${org}/sessions/${session.id}/live`}
               className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-colors"
             >
               Wejdź na posiedzenie →
@@ -94,8 +92,8 @@ export default async function SessionDetailPage({
 }
 
 // Client component for the start button
-function StartSessionButton({ sessionId }: { sessionId: string }) {
-  return <StartSessionButtonClient sessionId={sessionId} />;
+function StartSessionButton({ sessionId, org }: { sessionId: string; org: string }) {
+  return <StartSessionButtonClient sessionId={sessionId} org={org} />;
 }
 
 import { StartSessionButtonClient } from '@/components/session/start-session-button';

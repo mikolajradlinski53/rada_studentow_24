@@ -1,6 +1,8 @@
 import { createServerSupabase } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { getOrgContext } from '@/lib/org';
 
 const ACTION_LABELS: Record<string, string> = {
   'session.opened': 'Otwarto posiedzenie',
@@ -13,12 +15,17 @@ const ACTION_LABELS: Record<string, string> = {
   'resolution.published': 'Opublikowano uchwałę',
 };
 
-export default async function AuditPage() {
+export default async function AuditPage({ params }: { params: Promise<{ org: string }> }) {
+  const { org } = await params;
+  const ctx = await getOrgContext(org);
+  if (!ctx) notFound();
+
   const supabase = await createServerSupabase();
 
   const { data: logs } = await supabase
     .from('audit_log')
     .select('*, actor:profiles(full_name)')
+    .eq('org_id', ctx.org.id)
     .order('created_at', { ascending: false })
     .limit(100);
 

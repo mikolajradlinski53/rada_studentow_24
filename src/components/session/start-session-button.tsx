@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
-export function StartSessionButtonClient({ sessionId }: { sessionId: string }) {
+export function StartSessionButtonClient({ sessionId, org }: { sessionId: string; org: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -19,7 +19,7 @@ export function StartSessionButtonClient({ sessionId }: { sessionId: string }) {
       .update({ status: 'in_progress', opened_at: new Date().toISOString() })
       .eq('id', sessionId);
 
-    router.push(`/sessions/${sessionId}/live`);
+    router.push(`/${org}/sessions/${sessionId}/live`);
   };
 
   return (
