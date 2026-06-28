@@ -158,6 +158,7 @@ export interface Vote {
   votes_against: number;
   votes_abstain: number;
   total_eligible: number;
+  secret_cast_count: number;
   result: VoteResult | null;
   created_at: string;
   // Joined
