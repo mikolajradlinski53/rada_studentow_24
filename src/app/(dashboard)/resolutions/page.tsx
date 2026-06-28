@@ -1,0 +1,65 @@
+import { createServerSupabase } from '@/lib/supabase/server';
+import { clsx } from 'clsx';
+import type { ResolutionStatus } from '@/types/database';
+
+const STATUS_LABELS: Record<ResolutionStatus, { label: string; color: string }> = {
+  draft: { label: 'Szkic', color: 'bg-zinc-700 text-zinc-300' },
+  adopted: { label: 'Uchwalona', color: 'bg-emerald-900/50 text-emerald-300' },
+  published: { label: 'Opublikowana', color: 'bg-blue-900/50 text-blue-300' },
+  revoked: { label: 'Uchylona', color: 'bg-red-900/50 text-red-300' },
+};
+
+export default async function ResolutionsPage() {
+  const supabase = await createServerSupabase();
+
+  const { data: resolutions } = await supabase
+    .from('resolutions')
+    .select('*, session:sessions(title)')
+    .order('number', { ascending: false });
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-zinc-100">Rejestr uchwał</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Wszystkie uchwały organu
+        </p>
+      </div>
+
+      {!resolutions?.length ? (
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-12 text-center text-sm text-zinc-500">
+          Brak uchwał w rejestrze.
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {resolutions.map((res) => {
+            const status = STATUS_LABELS[res.status as ResolutionStatus];
+            return (
+              <div
+                key={res.id}
+                className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-3"
+              >
+                <div>
+                  <div className="text-sm font-medium text-zinc-200">
+                    {res.signature}
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500">{res.title}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {res.pdf_url && (
+                    <a href={res.pdf_url} target="_blank" rel="noopener" className="text-xs text-indigo-400 hover:text-indigo-300">
+                      PDF
+                    </a>
+                  )}
+                  <span className={clsx('rounded-full px-2.5 py-0.5 text-xs font-medium', status.color)}>
+                    {status.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
