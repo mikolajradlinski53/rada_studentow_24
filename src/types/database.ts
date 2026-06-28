@@ -16,11 +16,15 @@ export type BallotChoice = 'for' | 'against' | 'abstain';
 export type ResolutionStatus = 'draft' | 'adopted' | 'published' | 'revoked';
 export type ProtocolStatus = 'draft' | 'review' | 'approved' | 'published';
 
+export type OrgModule = 'sessions' | 'resolutions' | 'audit';
+
 export interface Organization {
   id: string;
   name: string;
   slug: string;
   logo_url: string | null;
+  accent_color: string | null;
+  enabled_modules: OrgModule[];
   created_at: string;
 }
 
@@ -67,6 +71,17 @@ export interface Mandate {
   revoked_at: string | null;
   // Joined
   profile?: Profile;
+}
+
+export interface Invitation {
+  id: string;
+  term_id: string;
+  email: string;
+  role: Role;
+  label: string | null;
+  invited_by: string | null;
+  created_at: string;
+  accepted_at: string | null;
 }
 
 export interface Session {
