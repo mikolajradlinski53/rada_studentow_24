@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <div
-      className="flex h-screen bg-zinc-950 text-zinc-100"
+      className="flex h-screen flex-col bg-zinc-950 text-zinc-100 md:flex-row"
       style={ctx.org.accent_color ? ({ ['--accent']: ctx.org.accent_color } as React.CSSProperties) : undefined}
     >
       <Sidebar
@@ -41,7 +41,7 @@ export default async function DashboardLayout({
         orgs={orgs}
       />
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+        <div className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">{children}</div>
       </main>
     </div>
   );

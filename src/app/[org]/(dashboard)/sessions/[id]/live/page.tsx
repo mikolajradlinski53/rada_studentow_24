@@ -86,25 +86,25 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <h1 className="text-lg font-semibold text-zinc-100">{session.title}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+          <h1 className="truncate text-lg font-semibold text-zinc-100">{session.title}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             href={`/${org}/projector/${sessionId}`}
             target="_blank"
             className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
           >
-            Widok rzutnikowy ↗
+            <span className="hidden sm:inline">Widok rzutnikowy</span><span className="sm:hidden">Rzutnik</span> ↗
           </Link>
           {isChair && session.status === 'in_progress' && (
             <button
               onClick={closeSession}
               className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
             >
-              Zamknij posiedzenie
+              <span className="hidden sm:inline">Zamknij posiedzenie</span><span className="sm:hidden">Zamknij</span>
             </button>
           )}
         </div>
@@ -182,15 +182,15 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
             </div>
           )}
 
-          {/* Voting buttons */}
+          {/* Voting buttons — big thumb targets, stacked on phones */}
           {isCheckedIn && !myBallot && (
-            <div className="mt-5 grid grid-cols-3 gap-3">
+            <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               <button onClick={() => castBallot('for')}
-                className="rounded-lg bg-emerald-600 py-4 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors active:scale-95">ZA</button>
+                className="rounded-xl bg-emerald-600 py-5 text-base font-semibold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500 transition-transform active:scale-95">ZA</button>
               <button onClick={() => castBallot('against')}
-                className="rounded-lg bg-red-600 py-4 text-sm font-semibold text-white hover:bg-red-500 transition-colors active:scale-95">PRZECIW</button>
+                className="rounded-xl bg-red-600 py-5 text-base font-semibold text-white shadow-lg shadow-red-900/30 hover:bg-red-500 transition-transform active:scale-95">PRZECIW</button>
               <button onClick={() => castBallot('abstain')}
-                className="rounded-lg bg-zinc-600 py-4 text-sm font-semibold text-white hover:bg-zinc-500 transition-colors active:scale-95">WSTRZYMUJĘ SIĘ</button>
+                className="rounded-xl bg-zinc-600 py-5 text-base font-semibold text-white hover:bg-zinc-500 transition-transform active:scale-95">WSTRZYMUJĘ SIĘ</button>
             </div>
           )}
           {myBallot && (

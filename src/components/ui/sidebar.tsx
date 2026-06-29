@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -28,7 +29,45 @@ interface SidebarProps {
   orgs: { id: string; slug: string; name: string }[];
 }
 
-export function Sidebar({ orgSlug, orgName, userName, role, modules, orgs }: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop: fixed left rail */}
+      <aside className="hidden w-56 flex-col border-r border-zinc-800 bg-zinc-900/50 md:flex">
+        <SidebarInner {...props} />
+      </aside>
+
+      {/* Mobile: top app bar */}
+      <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-4 backdrop-blur md:hidden">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="-ml-1 flex h-9 w-9 items-center justify-center rounded-md text-zinc-300 hover:bg-zinc-800"
+          aria-label="Otwórz menu"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </button>
+        <div className="text-sm font-semibold tracking-tight text-zinc-100">RadaStudentów24</div>
+        <div className="w-9" />
+      </header>
+
+      {/* Mobile: slide-over drawer */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[80%] flex-col border-r border-zinc-800 bg-zinc-900 shadow-xl">
+            <SidebarInner {...props} onNavigate={() => setDrawerOpen(false)} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SidebarInner({
+  orgSlug, orgName, userName, role, modules, orgs, onNavigate,
+}: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -45,30 +84,26 @@ export function Sidebar({ orgSlug, orgName, userName, role, modules, orgs }: Sid
   );
 
   return (
-    <aside className="flex w-56 flex-col border-r border-zinc-800 bg-zinc-900/50">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-zinc-800 px-4 py-5">
-        <div className="text-sm font-semibold text-zinc-100 tracking-tight">
-          RadaStudentów24
-        </div>
+        <div className="text-sm font-semibold tracking-tight text-zinc-100">RadaStudentów24</div>
         {orgs.length > 1 ? (
           <select
             value={orgSlug}
-            onChange={(e) => router.push(`/${e.target.value}/sessions`)}
+            onChange={(e) => { onNavigate?.(); router.push(`/${e.target.value}/sessions`); }}
             className="mt-1.5 w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 focus:border-indigo-500 focus:outline-none"
             aria-label="Wybierz organizację"
           >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.slug}>{o.name}</option>
-            ))}
+            {orgs.map((o) => <option key={o.id} value={o.slug}>{o.name}</option>)}
           </select>
         ) : (
-          orgName && <div className="mt-0.5 text-xs text-zinc-500 truncate">{orgName}</div>
+          orgName && <div className="mt-0.5 truncate text-xs text-zinc-500">{orgName}</div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5">
+      <nav className="flex-1 space-y-0.5 px-2 py-3">
         {visibleItems.map((item) => {
           const href = `/${orgSlug}/${item.path}`;
           const isActive = pathname.startsWith(href);
@@ -76,11 +111,10 @@ export function Sidebar({ orgSlug, orgName, userName, role, modules, orgs }: Sid
             <Link
               key={item.path}
               href={href}
+              onClick={onNavigate}
               className={clsx(
-                'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                'flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors',
+                isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -92,16 +126,13 @@ export function Sidebar({ orgSlug, orgName, userName, role, modules, orgs }: Sid
 
       {/* User */}
       <div className="border-t border-zinc-800 px-4 py-4">
-        <div className="text-sm text-zinc-300 truncate">{userName}</div>
-        <div className="mt-0.5 text-xs text-zinc-600 capitalize">{role}</div>
-        <button
-          onClick={handleLogout}
-          className="mt-3 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
+        <div className="truncate text-sm text-zinc-300">{userName}</div>
+        <div className="mt-0.5 text-xs capitalize text-zinc-600">{role}</div>
+        <button onClick={handleLogout} className="mt-3 text-xs text-zinc-500 transition-colors hover:text-zinc-300">
           Wyloguj się
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -142,6 +173,16 @@ function SettingsIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  );
+}
+
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   );
 }
