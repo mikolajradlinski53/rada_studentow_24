@@ -8,7 +8,7 @@ import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/t
 import type { Vote } from '@/types/database';
 
 export function ProjectorView({ sessionId }: { sessionId: string }) {
-  const { loading, session, agendaItems, activeVote, openVoteBallots, quorum, presentCount } =
+  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount } =
     useLiveSession(sessionId);
   const supabase = createClient();
 
@@ -32,6 +32,17 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
 
   const tally = tallyOf(activeVote, openVoteBallots);
   const eligible = quorum?.total_seats ?? presentCount;
+
+  // Open vote: who voted how (named voting is public — show it on the beamer).
+  const nameByMandate = new Map(
+    attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '—'])
+  );
+  const votersByChoice = { for: [] as string[], against: [] as string[], abstain: [] as string[] };
+  if (activeVote?.vote_type === 'open') {
+    for (const b of openVoteBallots) {
+      if (b.mandate_id) votersByChoice[b.choice].push(nameByMandate.get(b.mandate_id) ?? '—');
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 px-10 py-8 text-zinc-100">
@@ -68,6 +79,16 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
                 <TallyBar label="ZA" count={tally.forN} total={eligible} tone="for" size="lg" />
                 <TallyBar label="PRZECIW" count={tally.against} total={eligible} tone="against" size="lg" />
                 <TallyBar label="WSTRZYMUJĘ SIĘ" count={tally.abstain} total={eligible} tone="abstain" size="lg" />
+
+                {/* Named voting — show who voted how */}
+                {tally.cast > 0 && (
+                  <div className="grid grid-cols-3 gap-4 pt-2 text-sm">
+                    <VoterColumn title="ZA" names={votersByChoice.for} tone="text-emerald-300" />
+                    <VoterColumn title="PRZECIW" names={votersByChoice.against} tone="text-red-300" />
+                    <VoterColumn title="WSTRZYMUJĄ SIĘ" names={votersByChoice.abstain} tone="text-zinc-300" />
+                  </div>
+                )}
+
                 <div className="pt-2 text-center text-xl tabular-nums text-zinc-500">
                   oddano {tally.cast} / {presentCount}
                 </div>
@@ -113,6 +134,19 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function VoterColumn({ title, names, tone }: { title: string; names: string[]; tone: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+      <div className={clsx('mb-2 text-center text-xs font-semibold uppercase tracking-widest', tone)}>
+        {title} · {names.length}
+      </div>
+      <ul className="space-y-0.5 text-center text-zinc-300">
+        {names.map((n, i) => <li key={i} className="truncate">{n}</li>)}
+      </ul>
     </div>
   );
 }
