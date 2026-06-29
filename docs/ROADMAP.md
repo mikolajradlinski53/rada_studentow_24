@@ -43,6 +43,22 @@ Po zamknięciu posiedzenia generowany szkielet: lista obecności, kworum, porzą
 ich rozstrzygnięcia, przerwy. Pola „przebieg dyskusji" do uzupełnienia przez
 protokolanta. Statusy draft → review → approved.
 
+**Transkrypcja mowy (Whisper / STT) jako *pluggable* źródło dyskusji:**
+- Cel: zredukować ręczne spisywanie „przebiegu dyskusji". Źródło transkrypcji
+  abstrakcyjne (interfejs), żeby wymieniać silnik bez zmian w protokole.
+- Whisper nie jest natywnie streamingowy i real-time na większym modelu wymaga
+  GPU — **nie zhostuje go Vercel**. Stąd etapy:
+  1. **Batch po posiedzeniu** (start): nagranie audio → faster-whisper (self-host)
+     lub Whisper API → tekst do szkicu protokołu. Maks. wartości, min. infry.
+  2. **Streaming STT** (Deepgram/AssemblyAI/Azure) lub WhisperLive na GPU — napisy
+     na żywo na panelu/rzutniku.
+  3. **Self-host Whisper na GPU** (Modal/RunPod/własny box) gdy ważna prywatność/koszt.
+- **Synergia z modułem A:** kolejka mówców daje „kto i od kiedy mówi" → znaczniki
+  czasu kolejki × transkrypcja = **automatyczne przypisanie fragmentów do radnego**
+  bez diaryzacji głosu. To kluczowa przewaga auto-protokołu.
+- **Prawne:** nagrywanie/transkrypcja wymaga poinformowania uczestników
+  (zgoda/regulamin) — komunikat w systemie + zapis zgody.
+
 ### D. Uchwały (PDF) + rejestr publiczny
 Z głosowania `passed` → uchwała z numeracją (`next_resolution_number`), formatka
 PDF z danymi z głosowania i podpisem, publiczny rejestr do pobrania (portal
