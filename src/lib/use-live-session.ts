@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type {
-  Session, AgendaItem, Vote, Attendance, Mandate, Profile, Ballot,
+  Session, AgendaItem, Vote, Attendance, Mandate, Profile, Ballot, FloorRequest,
   BallotChoice, QuorumInfo,
 } from '@/types/database';
 
@@ -22,7 +22,21 @@ export interface LiveSessionData {
   myBallot: BallotChoice | null;
   quorum: QuorumInfo | null;
   presentCount: number;
+  /** Active discussion queue (waiting + currently speaking), ordered by priority. */
+  floorRequests: FloorRequest[];
   refetch: () => Promise<void>;
+}
+
+// Formal motions jump the queue, then ad vocem, then ordinary speaking turns.
+const KIND_PRIORITY: Record<FloorRequest['kind'], number> = { formal: 0, ad_vocem: 1, speak: 2 };
+
+function orderQueue(rows: FloorRequest[]): FloorRequest[] {
+  return [...rows].sort((a, b) => {
+    if (a.status === 'speaking' && b.status !== 'speaking') return -1;
+    if (b.status === 'speaking' && a.status !== 'speaking') return 1;
+    if (KIND_PRIORITY[a.kind] !== KIND_PRIORITY[b.kind]) return KIND_PRIORITY[a.kind] - KIND_PRIORITY[b.kind];
+    return a.created_at.localeCompare(b.created_at);
+  });
 }
 
 /**
@@ -39,6 +53,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [myMandate, setMyMandate] = useState<Mandate | null>(null);
   const [myBallot, setMyBallot] = useState<BallotChoice | null>(null);
   const [quorum, setQuorum] = useState<QuorumInfo | null>(null);
+  const [floorRequests, setFloorRequests] = useState<FloorRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
@@ -73,6 +88,14 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
     const { data: q } = await supabase.rpc('calculate_quorum', { p_session_id: sessionId });
     setQuorum(q as QuorumInfo | null);
+
+    const { data: fr } = await supabase
+      .from('floor_requests')
+      .select('*, mandate:mandates(*, profile:profiles(*))')
+      .eq('session_id', sessionId)
+      .in('status', ['waiting', 'speaking'])
+      .order('created_at');
+    setFloorRequests(orderQueue((fr as FloorRequest[]) ?? []));
 
     const { data: vote } = await supabase
       .from('votes').select('*')
@@ -118,6 +141,8 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ballots' }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [sessionId, supabase, refetch]);
@@ -128,7 +153,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   return {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, refetch,
+    myMandate, myBallot, quorum, presentCount, floorRequests, refetch,
   };
 }
 

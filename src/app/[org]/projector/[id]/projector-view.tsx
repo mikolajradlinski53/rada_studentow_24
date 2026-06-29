@@ -5,12 +5,14 @@ import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
 import { useLiveSession, tallyOf } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
+import { useCountdown } from '@/components/session/break-banner';
 import type { Vote } from '@/types/database';
 
 export function ProjectorView({ sessionId }: { sessionId: string }) {
-  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount } =
+  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount, floorRequests } =
     useLiveSession(sessionId);
   const supabase = createClient();
+  const breakRemaining = useCountdown(session?.on_break_until ?? null);
 
   // Last closed vote — shown big between votes (the moment the room looks up).
   const [lastResult, setLastResult] = useState<Vote | null>(null);
@@ -44,6 +46,9 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
     }
   }
 
+  const speaker = floorRequests.find((r) => r.status === 'speaking') ?? null;
+  const queue = floorRequests.filter((r) => r.status === 'waiting');
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 px-10 py-8 text-zinc-100">
       {/* Header */}
@@ -65,7 +70,12 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
 
       {/* Main stage */}
       <div className="flex flex-1 items-center justify-center py-8">
-        {activeVote ? (
+        {breakRemaining ? (
+          <div className="text-center">
+            <div className="text-3xl uppercase tracking-widest text-amber-400">Przerwa w obradach</div>
+            <div className="mt-4 text-[9rem] font-bold leading-none tabular-nums text-amber-200">{breakRemaining}</div>
+          </div>
+        ) : activeVote ? (
           <div className="w-full max-w-4xl">
             <div className="mb-8 text-center">
               <div className="text-lg font-medium uppercase tracking-widest text-indigo-400">
@@ -98,6 +108,23 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
                 <div className="text-[10rem] font-bold leading-none tabular-nums text-zinc-100">{tally.cast}</div>
                 <div className="mt-4 text-2xl text-zinc-400">oddanych głosów z {presentCount} obecnych</div>
                 <div className="mt-2 text-lg uppercase tracking-widest text-indigo-400">głosowanie tajne — wynik po zamknięciu</div>
+              </div>
+            )}
+          </div>
+        ) : speaker ? (
+          <div className="text-center">
+            <div className="text-2xl uppercase tracking-widest text-indigo-400">Głos ma</div>
+            <div className="mt-4 text-7xl font-bold text-zinc-100">{speaker.mandate?.profile?.full_name ?? '—'}</div>
+            {queue.length > 0 && (
+              <div className="mt-10">
+                <div className="text-sm uppercase tracking-widest text-zinc-600">Kolejka</div>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {queue.map((r, i) => (
+                    <span key={r.id} className="rounded-full bg-zinc-800 px-4 py-1.5 text-lg text-zinc-300">
+                      {i + 1}. {r.mandate?.profile?.full_name ?? '—'}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>

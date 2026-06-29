@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { clsx } from 'clsx';
 import { useLiveSession, tallyOf } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
+import { Discussion } from '@/components/session/discussion';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -19,7 +20,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount,
+    myMandate, myBallot, quorum, presentCount, floorRequests,
   } = useLiveSession(sessionId);
 
   const isChair =
@@ -211,6 +212,15 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           )}
         </div>
       )}
+
+      {/* Discussion / speaker queue + procedural motions */}
+      <Discussion
+        sessionId={sessionId}
+        session={session}
+        floorRequests={floorRequests}
+        myMandate={myMandate}
+        isChair={isChair}
+      />
 
       {/* Agenda */}
       <div>

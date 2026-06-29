@@ -15,6 +15,9 @@ export type VoteResult = 'passed' | 'rejected' | 'no_quorum';
 export type BallotChoice = 'for' | 'against' | 'abstain';
 export type ResolutionStatus = 'draft' | 'adopted' | 'published' | 'revoked';
 export type ProtocolStatus = 'draft' | 'review' | 'approved' | 'published';
+export type FloorRequestKind = 'speak' | 'ad_vocem' | 'formal';
+export type FormalMotionType = 'break' | 'extend_time' | 'close_list' | 'reconsider' | 'other';
+export type FloorRequestStatus = 'waiting' | 'speaking' | 'done' | 'withdrawn' | 'rejected';
 
 export type OrgModule = 'sessions' | 'resolutions' | 'audit';
 
@@ -95,6 +98,7 @@ export interface Session {
   location: string | null;
   opened_at: string | null;
   closed_at: string | null;
+  on_break_until: string | null;
   status: SessionStatus;
   chaired_by: string | null;
   protocol_by: string | null;
@@ -171,6 +175,22 @@ export interface Ballot {
   mandate_id: string | null;
   choice: BallotChoice;
   cast_at: string;
+  // Joined
+  mandate?: Mandate & { profile?: Profile };
+}
+
+export interface FloorRequest {
+  id: string;
+  session_id: string;
+  mandate_id: string;
+  kind: FloorRequestKind;
+  formal_type: FormalMotionType | null;
+  minutes: number | null;
+  note: string | null;
+  status: FloorRequestStatus;
+  created_at: string;
+  called_at: string | null;
+  ended_at: string | null;
   // Joined
   mandate?: Mandate & { profile?: Profile };
 }

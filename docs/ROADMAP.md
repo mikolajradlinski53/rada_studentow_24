@@ -20,18 +20,17 @@
 
 ## 🔜 Następne moduły
 
-### A. Głos i dyskusja (kolejka mówców) + wnioski proceduralne  ← NASTĘPNE
-Realtime, mobilny. Tabela `floor_requests` (typ/status/kolejność), RLS, realtime.
-- Radny z telefonu: **„✋ Zgłoś się do głosu"** — typy: *zabranie głosu*, *ad vocem*,
-  oraz **wnioski formalne/proceduralne**: o **przerwę** w posiedzeniu, o
-  **przedłużenie czasu** (np. na pytania w absolutorium), o zamknięcie listy mówców,
-  o reasumpcję. Może wycofać zgłoszenie.
-- Prowadzący: **kolejka mówców na żywo**; „Udziel głosu" → „Zakończ". Wniosek
-  formalny wyróżniony i z pierwszeństwem; prowadzący może go **przekuć w szybkie
-  głosowanie proceduralne** (np. „czy przegłosować przerwę 10 min?").
-- Wnioski czasowe (przerwa / przedłużenie) niosą parametr (np. minuty); po
-  przyjęciu uruchamiają widoczny **timer** na panelu i rzutniku.
-- Rzutnik: „GŁOS MA: *Imię Nazwisko*" + kolejka + ewentualny timer przerwy.
+### A. Głos i dyskusja (kolejka mówców) + wnioski proceduralne  ✅ ZROBIONE (v1)
+Tabela `floor_requests` (typ/status/kolejność), `sessions.on_break_until`, RLS, realtime.
+- Radny z telefonu: **„✋ Zabierz głos"**, **Ad vocem**, **Wniosek formalny**
+  (przerwa / przedłużenie czasu / zamknięcie listy / reasumpcja / inny; z parametrem
+  minut i uzasadnieniem). Może wycofać zgłoszenie.
+- Prowadzący: **kolejka mówców na żywo** (formalne z pierwszeństwem, wyróżnione);
+  „Udziel głosu" → „Zakończ"; „Przyjmij/Odrzuć" wniosek. Przyjęcie **przerwy**
+  uruchamia **timer** (`on_break_until`) z odliczaniem na panelu i rzutniku.
+- Rzutnik: „GŁOS MA: *Imię Nazwisko*" + kolejka + wielkie odliczanie przerwy.
+- **TODO v2:** przekucie wniosku formalnego w szybkie głosowanie proceduralne
+  (dziś prowadzący przyjmuje/odrzuca decyzją); timer dla „przedłużenia czasu".
 
 ### B. Wybory kandydatów
 Głosowanie wyboru osoby/osób z listy (Zarząd, komisje, ławnicy) — wiele opcji,
