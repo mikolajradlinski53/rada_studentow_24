@@ -36,11 +36,16 @@ Tabela `floor_requests` (typ/status/kolejność), `sessions.on_break_until`, RLS
 Głosowanie wyboru osoby/osób z listy (Zarząd, komisje, ławnicy) — wiele opcji,
 próg, wiele mandatów do obsadzenia. Wzorzec eSesji „wybory".
 
-### C. Auto-protokół  (największy zabójca papierologii — nasza przewaga)
-Po zamknięciu posiedzenia generowany szkielet: lista obecności, kworum, porządek,
-**wyniki wszystkich głosowań** (z imienną listą przy jawnych), wnioski formalne i
-ich rozstrzygnięcia, przerwy. Pola „przebieg dyskusji" do uzupełnienia przez
-protokolanta. Statusy draft → review → approved.
+### C. Auto-protokół  ✅ ZROBIONE (v1, bez transkrypcji/PDF)
+Generowanie strukturalnego szkicu (Markdown) z danych posiedzenia: nagłówek,
+kworum, lista obecności (obecni/nieobecni), porządek + miejsca na „przebieg
+dyskusji", **wszystkie głosowania** (imienne listy przy jawnych), wnioski formalne.
+Edytor dla prowadzącego/protokolanta (textarea), statusy draft → review →
+approved → published, „Generuj/Regeneruj szkielet". Strona
+`/[org]/sessions/[id]/protocol`, używa istniejącej tabeli `protocols`.
+- **TODO v2:** transkrypcja (Whisper/STT, sekcja niżej) wstrzykiwana w „przebieg
+  dyskusji" + przypisanie po kolejce mówców; eksport **PDF**; podpis; edycja przez
+  rolę `secretary` (dziś prowadzący/admin) przez wiring `protocol_by`.
 
 **Transkrypcja mowy (Whisper / STT) jako *pluggable* źródło dyskusji:**
 - Cel: zredukować ręczne spisywanie „przebiegu dyskusji". Źródło transkrypcji
