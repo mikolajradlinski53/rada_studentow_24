@@ -35,12 +35,12 @@ export function Sidebar(props: SidebarProps) {
   return (
     <>
       {/* Desktop: fixed left rail */}
-      <aside className="hidden w-56 flex-col border-r border-zinc-800 bg-zinc-900/50 md:flex">
+      <aside className="hidden w-56 flex-col border-r border-zinc-800 bg-zinc-900/50 md:flex print:hidden">
         <SidebarInner {...props} />
       </aside>
 
       {/* Mobile: top app bar */}
-      <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-4 backdrop-blur md:hidden">
+      <header className="flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-4 backdrop-blur md:hidden print:hidden">
         <button
           onClick={() => setDrawerOpen(true)}
           className="-ml-1 flex h-9 w-9 items-center justify-center rounded-md text-zinc-300 hover:bg-zinc-800"

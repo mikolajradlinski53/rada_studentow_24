@@ -63,10 +63,16 @@ approved → published, „Generuj/Regeneruj szkielet". Strona
 - **Prawne:** nagrywanie/transkrypcja wymaga poinformowania uczestników
   (zgoda/regulamin) — komunikat w systemie + zapis zgody.
 
-### D. Uchwały (PDF) + rejestr publiczny
-Z głosowania `passed` → uchwała z numeracją (`next_resolution_number`), formatka
-PDF z danymi z głosowania i podpisem, publiczny rejestr do pobrania (portal
-mieszkańca — nasza przewaga nad zamkniętym eSesją).
+### D. Uchwały  ✅ ZROBIONE (v1; rejestr publiczny = v2)
+Z przyjętego głosowania (`passed`) → **„Utwórz uchwałę"** na stronie posiedzenia:
+numeracja przez `next_resolution_number`, sygnatura z wzorca organu
+(`Uchwała {nr}/{kadencja}/{organ}`). Edytor (tytuł „w sprawie…", podstawa prawna,
+treść §, status draft → adopted → published → revoked; ustawienie „Uchwalona"
+**podpisuje** — signed_by/at). **Wersja do druku** `/[org]/resolutions/[id]/print`
+(czysty dokument na białym tle, nav `print:hidden`) → przeglądarka „Zapisz jako PDF".
+Rejestr `/[org]/resolutions` linkuje do edytora i druku.
+- **TODO v2:** **publiczny rejestr** (portal mieszkańca, anon RLS + trasa publiczna),
+  generowany PDF (`@react-pdf/renderer`) zamiast druku, e-podpis.
 
 ### E. Komisja Rewizyjna — realny audit log
 Zapis zdarzeń (`session.opened`, `vote.opened`, `ballot.cast`, …) server-side do

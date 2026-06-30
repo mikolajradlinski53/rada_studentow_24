@@ -1,5 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { clsx } from 'clsx';
 import { getOrgContext } from '@/lib/org';
 import type { ResolutionStatus } from '@/types/database';
@@ -45,20 +46,18 @@ export default async function ResolutionsPage({ params }: { params: Promise<{ or
             return (
               <div
                 key={res.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-3"
+                className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-3 hover:border-zinc-700 transition-colors"
               >
-                <div>
-                  <div className="text-sm font-medium text-zinc-200">
+                <Link href={`/${org}/resolutions/${res.id}`} className="min-w-0 flex-1 group">
+                  <div className="truncate text-sm font-medium text-zinc-200 group-hover:text-zinc-100">
                     {res.signature}
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500">{res.title}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {res.pdf_url && (
-                    <a href={res.pdf_url} target="_blank" rel="noopener" className="text-xs text-indigo-400 hover:text-indigo-300">
-                      PDF
-                    </a>
-                  )}
+                  <div className="mt-0.5 truncate text-xs text-zinc-500">{res.title}</div>
+                </Link>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Link href={`/${org}/resolutions/${res.id}/print`} target="_blank" className="text-xs text-indigo-400 hover:text-indigo-300">
+                    PDF
+                  </Link>
                   <span className={clsx('rounded-full px-2.5 py-0.5 text-xs font-medium', status.color)}>
                     {status.label}
                   </span>

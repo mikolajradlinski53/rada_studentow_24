@@ -37,6 +37,21 @@ export default async function SessionDetailPage({
     .eq('session_id', id)
     .order('position');
 
+  const { data: passedVotes } = await supabase
+    .from('votes')
+    .select('id, title')
+    .eq('session_id', id)
+    .eq('status', 'closed')
+    .eq('result', 'passed')
+    .order('closed_at');
+
+  const { data: resolutions } = await supabase
+    .from('resolutions')
+    .select('id, vote_id, signature, title, status')
+    .eq('session_id', id);
+
+  const resByVote = new Map((resolutions ?? []).map((r) => [r.vote_id, r]));
+
   const { data: { user } } = await supabase.auth.getUser();
 
   const canManage = ctx.role === 'admin' || ctx.role === 'chair' || session.chaired_by === user?.id;
@@ -95,6 +110,36 @@ export default async function SessionDetailPage({
           canEdit={canManage && !isLive}
         />
       </div>
+
+      {/* Resolutions from passed votes */}
+      {(passedVotes?.length ?? 0) > 0 && (
+        <div className="mt-8">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">Uchwały</h2>
+          <div className="space-y-1.5">
+            {passedVotes!.map((v) => {
+              const res = resByVote.get(v.id);
+              return (
+                <div key={v.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-zinc-200">
+                      {res ? res.signature : v.title.replace(/^Głosowanie:\s*/i, '')}
+                    </div>
+                    <div className="text-xs text-zinc-500">{res ? 'Uchwała utworzona' : 'Głosowanie przyjęte'}</div>
+                  </div>
+                  {res ? (
+                    <Link href={`/${org}/resolutions/${res.id}`}
+                      className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
+                      Otwórz uchwałę
+                    </Link>
+                  ) : canManage ? (
+                    <CreateResolutionButton org={org} voteId={v.id} />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -105,3 +150,4 @@ function StartSessionButton({ sessionId, org }: { sessionId: string; org: string
 }
 
 import { StartSessionButtonClient } from '@/components/session/start-session-button';
+import { CreateResolutionButton } from '@/components/session/create-resolution-button';
