@@ -109,5 +109,9 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
 
 ## 🧩 Drobne polish (na bieżąco)
 - ✅ Rzutnik przy głosowaniu jawnym pokazuje **kto jak zagłosował** (tajne — nie).
-- Obecność: statusy `late`/`excused`/`left_early` + check-out w UI.
+- ✅ **Lista obecności prowadzącego (roll call)** + tryb `attendance_mode`
+  (`chair`/`self`): przy stacjonarnym to prowadzący wpisuje obecnych, a RLS blokuje
+  samodzielne odhaczanie się (zdalny radny nie „wejdzie" na głosowanie). Statusy
+  present/late/excused/absent w UI.
+- Check-out (`left_early`) w UI; eksport listy obecności.
 - Lint debt: pre-existing `any` casts, set-state-in-effect na live page.

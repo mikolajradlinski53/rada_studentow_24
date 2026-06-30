@@ -39,6 +39,7 @@ export default function NewSessionPage() {
 
     const scheduledDate = form.get('date') as string;
     const scheduledTime = form.get('time') as string;
+    const mode = form.get('mode') as string;
 
     const { data: session, error: insertError } = await supabase
       .from('sessions')
@@ -47,7 +48,9 @@ export default function NewSessionPage() {
         term_id: term.id,
         title: form.get('title') as string,
         session_type: form.get('type') as string,
-        mode: form.get('mode') as string,
+        mode,
+        // In-person sittings default to chair-run roll call; remote/hybrid to self.
+        attendance_mode: mode === 'in_person' ? 'chair' : 'self',
         scheduled_at: `${scheduledDate}T${scheduledTime}:00`,
         location: (form.get('location') as string) || null,
         status: 'scheduled',

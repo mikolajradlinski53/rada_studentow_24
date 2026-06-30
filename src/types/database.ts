@@ -6,6 +6,7 @@ export type SessionType = 'regular' | 'extraordinary';
 export type SessionMode = 'in_person' | 'remote' | 'hybrid';
 export type SessionStatus = 'draft' | 'scheduled' | 'in_progress' | 'closed' | 'protocol_pending' | 'archived';
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'left_early';
+export type AttendanceMode = 'self' | 'chair';
 export type AgendaItemType = 'procedural' | 'discussion' | 'resolution' | 'election' | 'information';
 export type AgendaItemStatus = 'pending' | 'in_progress' | 'completed' | 'postponed';
 export type VoteType = 'open' | 'secret';
@@ -99,6 +100,7 @@ export interface Session {
   opened_at: string | null;
   closed_at: string | null;
   on_break_until: string | null;
+  attendance_mode: AttendanceMode;
   status: SessionStatus;
   chaired_by: string | null;
   protocol_by: string | null;

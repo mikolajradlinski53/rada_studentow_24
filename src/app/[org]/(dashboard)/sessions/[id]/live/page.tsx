@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { useLiveSession, tallyOf } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
 import { Discussion } from '@/components/session/discussion';
+import { RollCall } from '@/components/session/roll-call';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -20,7 +21,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, floorRequests,
+    myMandate, myBallot, quorum, presentCount, roster, floorRequests,
   } = useLiveSession(sessionId);
 
   const isChair =
@@ -140,14 +141,27 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           />
         </div>
 
-        {myMandate && !isCheckedIn && (
+        {myMandate && !isCheckedIn && session.attendance_mode === 'self' && (
           <button onClick={checkIn}
             className="mt-3 w-full rounded-md bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 transition-colors">
             Potwierdź obecność
           </button>
         )}
+        {myMandate && !isCheckedIn && session.attendance_mode === 'chair' && (
+          <div className="mt-2 text-xs text-zinc-500">Obecność potwierdza prowadzący.</div>
+        )}
         {isCheckedIn && <div className="mt-2 text-xs text-emerald-400">✓ Jesteś obecny/a</div>}
       </div>
+
+      {/* Chair roll call */}
+      {isChair && (
+        <RollCall
+          sessionId={sessionId}
+          roster={roster}
+          attendance={attendance}
+          mode={session.attendance_mode}
+        />
+      )}
 
       {/* Active vote */}
       {activeVote && (

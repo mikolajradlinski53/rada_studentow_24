@@ -22,6 +22,8 @@ export interface LiveSessionData {
   myBallot: BallotChoice | null;
   quorum: QuorumInfo | null;
   presentCount: number;
+  /** All active mandates of the session's term (for the chair roll call). */
+  roster: MandateWithProfile[];
   /** Active discussion queue (waiting + currently speaking), ordered by priority. */
   floorRequests: FloorRequest[];
   refetch: () => Promise<void>;
@@ -53,6 +55,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [myMandate, setMyMandate] = useState<Mandate | null>(null);
   const [myBallot, setMyBallot] = useState<BallotChoice | null>(null);
   const [quorum, setQuorum] = useState<QuorumInfo | null>(null);
+  const [roster, setRoster] = useState<MandateWithProfile[]>([]);
   const [floorRequests, setFloorRequests] = useState<FloorRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,6 +88,15 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       .select('*, mandate:mandates(*, profile:profiles(*))')
       .eq('session_id', sessionId);
     setAttendance((att as AttendanceWithMandate[]) ?? []);
+
+    if (sess?.term_id) {
+      const { data: roster } = await supabase
+        .from('mandates')
+        .select('*, profile:profiles(*)')
+        .eq('term_id', sess.term_id)
+        .eq('is_active', true);
+      setRoster((roster as MandateWithProfile[]) ?? []);
+    }
 
     const { data: q } = await supabase.rpc('calculate_quorum', { p_session_id: sessionId });
     setQuorum(q as QuorumInfo | null);
@@ -153,7 +165,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   return {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, floorRequests, refetch,
+    myMandate, myBallot, quorum, presentCount, roster, floorRequests, refetch,
   };
 }
 
