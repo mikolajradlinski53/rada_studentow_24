@@ -38,19 +38,23 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   };
 
   const openVote = async (item: AgendaItem, voteType: VoteType) => {
-    await supabase.from('votes').insert({
+    const { data: created } = await supabase.from('votes').insert({
       session_id: sessionId,
       agenda_item_id: item.id,
       title: `Głosowanie: ${item.title}`,
       vote_type: voteType,
       status: 'open',
       opened_at: new Date().toISOString(),
-    });
+    }).select('id').single();
+    if (created) {
+      await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: created.id, p_metadata: { vote_type: voteType } });
+    }
   };
 
   const closeVote = async () => {
     if (!activeVote) return;
     await supabase.rpc('tally_vote', { p_vote_id: activeVote.id });
+    await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: {} });
   };
 
   const castBallot = async (choice: BallotChoice) => {
@@ -58,7 +62,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     const { error } = await supabase.rpc('cast_ballot', {
       p_vote_id: activeVote.id, p_mandate_id: myMandate.id, p_choice: choice,
     });
-    if (error) alert('Nie udało się oddać głosu. Odśwież stronę i spróbuj ponownie.');
+    if (error) { alert('Nie udało się oddać głosu. Odśwież stronę i spróbuj ponownie.'); return; }
+    // Records participation only (never the choice) — keeps secret votes anonymous.
+    await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: { vote_type: activeVote.vote_type } });
   };
 
   const closeSession = async () => {
@@ -66,6 +72,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     await supabase.from('sessions')
       .update({ status: 'protocol_pending', closed_at: new Date().toISOString() })
       .eq('id', sessionId);
+    await supabase.rpc('log_audit', { p_action: 'session.closed', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
   };
 
   // === RENDER ===

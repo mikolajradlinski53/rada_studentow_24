@@ -70,6 +70,7 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
     .single();
   if (error) return { error: error.message };
 
+  await supabase.rpc('log_audit', { p_action: 'resolution.created', p_target_type: 'resolution', p_target_id: created.id, p_metadata: { signature } });
   revalidatePath(`/${slug}/resolutions`);
   revalidatePath(`/${slug}/sessions/${vote.session_id}`);
   return { ok: true, id: created.id };
@@ -102,6 +103,9 @@ export async function saveResolution(
     })
     .eq('id', id);
   if (error) return { error: error.message };
+
+  if (signing) await supabase.rpc('log_audit', { p_action: 'resolution.signed', p_target_type: 'resolution', p_target_id: id, p_metadata: {} });
+  if (fields.status === 'published') await supabase.rpc('log_audit', { p_action: 'resolution.published', p_target_type: 'resolution', p_target_id: id, p_metadata: {} });
 
   revalidatePath(`/${slug}/resolutions`);
   revalidatePath(`/${slug}/resolutions/${id}`);

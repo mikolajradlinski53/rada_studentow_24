@@ -114,6 +114,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
     .upsert({ session_id: sessionId, body, status: 'draft', generated_at: new Date().toISOString() }, { onConflict: 'session_id' });
   if (error) return { error: error.message };
 
+  await supabase.rpc('log_audit', { p_action: 'protocol.generated', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
   revalidatePath(`/${slug}/sessions/${sessionId}/protocol`);
   return { ok: true };
 }

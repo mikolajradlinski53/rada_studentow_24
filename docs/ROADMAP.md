@@ -74,9 +74,15 @@ Rejestr `/[org]/resolutions` linkuje do edytora i druku.
 - **TODO v2:** **publiczny rejestr** (portal mieszkańca, anon RLS + trasa publiczna),
   generowany PDF (`@react-pdf/renderer`) zamiast druku, e-podpis.
 
-### E. Komisja Rewizyjna — realny audit log
-Zapis zdarzeń (`session.opened`, `vote.opened`, `ballot.cast`, …) server-side do
-`audit_log`, filtrowalny panel read-only. Dziś tabela i RLS gotowe, brak zapisu.
+### E. Komisja Rewizyjna — realny audit log  ✅ ZROBIONE (v1)
+Funkcja `log_audit` (SECURITY DEFINER, jedyna ścieżka zapisu — bezpośrednie
+INSERT-y zablokowane RLS): stempluje `actor_id`, wyprowadza `org_id` z celu.
+Logowane zdarzenia: `session.opened/closed`, `vote.opened/closed`, `ballot.cast`
+(tylko udział, nigdy wybór — anonimowość tajnych zachowana), `protocol.generated`,
+`resolution.created/signed/published`. Panel `/[org]/audit` (admin/chair/auditor)
+pokazuje czas, osobę, akcję i podpowiedź (sygnatura / typ głosowania).
+- **TODO v2:** filtry (po typie/dacie/posiedzeniu), `attendance.checked_in`,
+  zdarzenia dyskusji, eksport.
 
 ### F. Transmisja (YouTube) + nakładki
 Embed transmisji na stronie posiedzenia/rzutniku, nakładki: aktualny punkt, mówca,

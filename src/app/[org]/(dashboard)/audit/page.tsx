@@ -11,6 +11,8 @@ const ACTION_LABELS: Record<string, string> = {
   'vote.closed': 'Zamknięto głosowanie',
   'ballot.cast': 'Oddano głos',
   'attendance.checked_in': 'Potwierdzono obecność',
+  'protocol.generated': 'Wygenerowano protokół',
+  'resolution.created': 'Utworzono uchwałę',
   'resolution.signed': 'Podpisano uchwałę',
   'resolution.published': 'Opublikowano uchwałę',
 };
@@ -58,6 +60,11 @@ export default async function AuditPage({ params }: { params: Promise<{ org: str
               <span className="text-zinc-300">
                 {ACTION_LABELS[log.action] ?? log.action}
               </span>
+              {(() => {
+                const m = (log.metadata ?? {}) as { signature?: string; vote_type?: string };
+                const hint = m.signature ?? (m.vote_type ? (m.vote_type === 'secret' ? 'tajne' : 'jawne') : null);
+                return hint ? <span className="text-xs text-zinc-600">· {hint}</span> : null;
+              })()}
             </div>
           ))}
         </div>

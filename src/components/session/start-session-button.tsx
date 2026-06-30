@@ -18,6 +18,7 @@ export function StartSessionButtonClient({ sessionId, org }: { sessionId: string
       .from('sessions')
       .update({ status: 'in_progress', opened_at: new Date().toISOString() })
       .eq('id', sessionId);
+    await supabase.rpc('log_audit', { p_action: 'session.opened', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
 
     router.push(`/${org}/sessions/${sessionId}/live`);
   };
