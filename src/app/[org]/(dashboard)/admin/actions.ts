@@ -3,7 +3,36 @@
 import { revalidatePath } from 'next/cache';
 import { getOrgContext } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
-import type { Role } from '@/types/database';
+import type { Role, OrgModule } from '@/types/database';
+
+const ALL_MODULES: OrgModule[] = ['sessions', 'resolutions', 'audit'];
+
+export async function updateBranding(
+  slug: string,
+  fields: { name: string; accent_color: string; logo_url: string; enabled_modules: OrgModule[] }
+): Promise<ActionResult> {
+  const ctx = await getOrgContext(slug);
+  if (!ctx || ctx.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (!fields.name.trim()) return { error: 'Nazwa nie może być pusta' };
+
+  // 'sessions' is the core module and cannot be disabled; keep only known modules.
+  const modules = Array.from(new Set<OrgModule>(['sessions', ...fields.enabled_modules.filter((m) => ALL_MODULES.includes(m))]));
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      name: fields.name.trim(),
+      accent_color: fields.accent_color.trim() || null,
+      logo_url: fields.logo_url.trim() || null,
+      enabled_modules: modules,
+    })
+    .eq('id', ctx.org.id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true };
+}
 
 const VALID_ROLES: Role[] = ['admin', 'chair', 'member', 'auditor', 'secretary', 'election_committee'];
 

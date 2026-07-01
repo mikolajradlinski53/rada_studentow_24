@@ -104,11 +104,13 @@ wyniki głosowania. Wzorzec eSesji „transmisja".
 Każdy tenant (RUSS UEW, URSS, Komisja Branżowa PSRP, …) ma czuć, że to **jego**
 system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
 
-- **Theming**: akcent + logo już są; dołożyć paletę (tło/akcent/kontrast),
-  favicon/nazwę w `<title>`, opcjonalnie własną typografię. Token `--accent`
-  przeniknięty do komponentów (przyciski, aktywne stany, paski).
-- **Panel brandingu w `/[org]/admin`**: admin podmiotu sam ustawia logo (Supabase
-  Storage), kolory, nazwę wyświetlaną, włączone moduły — bez ingerencji w kod.
+- ✅ **Panel brandingu w `/[org]/admin`**: admin podmiotu sam ustawia **nazwę,
+  kolor akcentu, logo (URL), włączone moduły** — bez ingerencji w kod (RLS
+  `org_admin_update`). Sidebar renderuje logo + akcent na aktywnej pozycji menu;
+  `enabled_modules` steruje widocznością zakładek.
+- **Theming (rozwój)**: przeniknąć token `--accent` do większej liczby komponentów
+  (przyciski, paski, kropka „na żywo"), favicon/`<title>` per-org, własna
+  typografia; **upload logo do Supabase Storage** zamiast URL.
 - **Domeny**: dziś `/[org]` (slug). Później **subdomeny** `uew.radastudentow24.pl`
   jako rewrite w `proxy.ts` (slug już w bazie), a docelowo **własne domeny**
   podmiotów (CNAME) — pełne white-label.

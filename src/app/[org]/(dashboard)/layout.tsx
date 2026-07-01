@@ -35,6 +35,7 @@ export default async function DashboardLayout({
       <Sidebar
         orgSlug={ctx.org.slug}
         orgName={ctx.org.name}
+        logoUrl={ctx.org.logo_url}
         userName={profile?.full_name ?? user.email ?? ''}
         role={ctx.role}
         modules={ctx.org.enabled_modules}

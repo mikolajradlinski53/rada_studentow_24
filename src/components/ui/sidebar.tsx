@@ -23,6 +23,7 @@ const NAV_ITEMS: {
 interface SidebarProps {
   orgSlug: string;
   orgName: string;
+  logoUrl: string | null;
   userName: string;
   role: string;
   modules: OrgModule[];
@@ -66,7 +67,7 @@ export function Sidebar(props: SidebarProps) {
 }
 
 function SidebarInner({
-  orgSlug, orgName, userName, role, modules, orgs, onNavigate,
+  orgSlug, orgName, logoUrl, userName, role, modules, orgs, onNavigate,
 }: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -87,6 +88,10 @@ function SidebarInner({
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-zinc-800 px-4 py-5">
+        {logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" className="mb-2 h-8 w-auto max-w-[10rem] object-contain" />
+        )}
         <div className="text-sm font-semibold tracking-tight text-zinc-100">RadaStudentów24</div>
         {orgs.length > 1 ? (
           <select
@@ -112,9 +117,12 @@ function SidebarInner({
               key={item.path}
               href={href}
               onClick={onNavigate}
+              style={isActive ? { borderColor: 'var(--accent, #6366f1)' } : undefined}
               className={clsx(
-                'flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors',
-                isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                'flex items-center gap-2.5 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors',
+                isActive
+                  ? 'border-l-2 bg-zinc-800 text-zinc-100'
+                  : 'border-transparent text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
