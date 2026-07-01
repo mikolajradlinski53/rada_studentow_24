@@ -71,8 +71,13 @@ treść §, status draft → adopted → published → revoked; ustawienie „Uc
 **podpisuje** — signed_by/at). **Wersja do druku** `/[org]/resolutions/[id]/print`
 (czysty dokument na białym tle, nav `print:hidden`) → przeglądarka „Zapisz jako PDF".
 Rejestr `/[org]/resolutions` linkuje do edytora i druku.
-- **TODO v2:** **publiczny rejestr** (portal mieszkańca, anon RLS + trasa publiczna),
-  generowany PDF (`@react-pdf/renderer`) zamiast druku, e-podpis.
+- ✅ **Publiczny rejestr** (portal mieszkańca): `/[org]/rejestr` (lista) i
+  `/[org]/rejestr/[id]` (dokument), **bez logowania** — proxy traktuje `rejestr`
+  jako trasę publiczną, RLS wystawia tylko uchwały `published` + dane organizacji.
+  `resolutions.org_id` zdenormalizowany, by anon mógł filtrować bez czytania
+  sessions/organs. Wspólny komponent `ResolutionDocument` (druk + publiczny).
+- **TODO v2:** generowany PDF (`@react-pdf/renderer`) zamiast druku, e-podpis,
+  nazwisko podpisującego w publicznym dokumencie (denormalizacja).
 
 ### E. Komisja Rewizyjna — realny audit log  ✅ ZROBIONE (v1)
 Funkcja `log_audit` (SECURITY DEFINER, jedyna ścieżka zapisu — bezpośrednie

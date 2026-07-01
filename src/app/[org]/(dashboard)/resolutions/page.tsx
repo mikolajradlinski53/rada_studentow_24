@@ -28,11 +28,17 @@ export default async function ResolutionsPage({ params }: { params: Promise<{ or
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-zinc-100">Rejestr uchwał</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Wszystkie uchwały organu
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">Rejestr uchwał</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Wszystkie uchwały organu
+          </p>
+        </div>
+        <Link href={`/${org}/rejestr`} target="_blank"
+          className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
+          Rejestr publiczny ↗
+        </Link>
       </div>
 
       {!resolutions?.length ? (

@@ -202,6 +202,7 @@ export interface Resolution {
   vote_id: string | null;
   session_id: string;
   term_id: string;
+  org_id: string | null;
   number: number;
   signature: string;
   title: string;

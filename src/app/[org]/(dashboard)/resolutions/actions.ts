@@ -24,7 +24,7 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
 
   const { data: vote } = await supabase
     .from('votes')
-    .select('id, title, result, session_id, session:sessions(term_id, organ:organs(resolution_prefix, resolution_pattern, short_name), term:terms(label))')
+    .select('id, title, result, session_id, session:sessions(term_id, organ:organs(resolution_prefix, resolution_pattern, short_name, org_id), term:terms(label))')
     .eq('id', voteId)
     .maybeSingle();
   if (!vote) return { error: 'Nie znaleziono głosowania' };
@@ -38,7 +38,7 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
 
   const session = vote.session as unknown as {
     term_id: string;
-    organ?: { resolution_prefix?: string; resolution_pattern?: string; short_name?: string };
+    organ?: { resolution_prefix?: string; resolution_pattern?: string; short_name?: string; org_id?: string };
     term?: { label?: string };
   };
   const termId = session.term_id;
@@ -60,6 +60,7 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
       vote_id: voteId,
       session_id: vote.session_id,
       term_id: termId,
+      org_id: session.organ?.org_id ?? null,
       number: number as number,
       signature,
       title: titleFromVote(vote.title),
