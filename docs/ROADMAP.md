@@ -29,8 +29,11 @@ Tabela `floor_requests` (typ/status/kolejność), `sessions.on_break_until`, RLS
   „Udziel głosu" → „Zakończ"; „Przyjmij/Odrzuć" wniosek. Przyjęcie **przerwy**
   uruchamia **timer** (`on_break_until`) z odliczaniem na panelu i rzutniku.
 - Rzutnik: „GŁOS MA: *Imię Nazwisko*" + kolejka + wielkie odliczanie przerwy.
-- **TODO v2:** przekucie wniosku formalnego w szybkie głosowanie proceduralne
-  (dziś prowadzący przyjmuje/odrzuca decyzją); timer dla „przedłużenia czasu".
+- ✅ **Głosowanie proceduralne z wniosku**: przy wniosku formalnym prowadzący ma
+  „Głosuj" → tworzy szybkie **jawne** głosowanie (`Wniosek formalny: …`); po
+  przyjęciu chair klika „Przyjmij", co go wykonuje (np. odpala przerwę).
+- **TODO v2:** timer dla „przedłużenia czasu"; auto-wykonanie wniosku po
+  przegłosowaniu (dziś dwa kroki: Głosuj → Przyjmij).
 
 ### B. Wybory kandydatów  ✅ ZROBIONE (v1, anonimowe, jednokrotny wybór)
 Punkt porządku typu „Wybory" → prowadzący otwiera wybory (lista kandydatów +

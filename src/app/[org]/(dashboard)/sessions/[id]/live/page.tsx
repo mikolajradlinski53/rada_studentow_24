@@ -259,6 +259,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         floorRequests={floorRequests}
         myMandate={myMandate}
         isChair={isChair}
+        canOpenVote={isChair && !activeVote}
       />
 
       {/* Agenda */}

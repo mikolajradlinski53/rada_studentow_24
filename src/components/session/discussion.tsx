@@ -31,13 +31,15 @@ function reqLabel(r: FloorRequest): string {
 }
 
 export function Discussion({
-  sessionId, session, floorRequests, myMandate, isChair,
+  sessionId, session, floorRequests, myMandate, isChair, canOpenVote,
 }: {
   sessionId: string;
   session: Session;
   floorRequests: FloorRequest[];
   myMandate: Mandate | null;
   isChair: boolean;
+  /** true when the chair can open a vote right now (no other vote active). */
+  canOpenVote: boolean;
 }) {
   const supabase = createClient();
   const [showFormal, setShowFormal] = useState(false);
@@ -75,6 +77,21 @@ export function Discussion({
       await supabase.from('sessions').update({ on_break_until: until }).eq('id', sessionId);
     }
     await supabase.from('floor_requests').update({ status: 'done' }).eq('id', r.id);
+  };
+  // Turn a formal motion into a quick open procedural vote. The motion stays in
+  // the queue; after it passes the chair still clicks "Przyjmij" to enact it.
+  const voteOnMotion = async (r: FloorRequest) => {
+    const { data: vote } = await supabase.from('votes').insert({
+      session_id: sessionId,
+      title: `Wniosek formalny: ${reqLabel(r)}`,
+      vote_type: 'open',
+      vote_kind: 'motion',
+      status: 'open',
+      opened_at: now(),
+    }).select('id').single();
+    if (vote) {
+      await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { procedural: true } });
+    }
   };
   const submitFormal = async () => {
     await request('formal', { formal_type: formalType, minutes: TIMED.includes(formalType) ? minutes : undefined, note });
@@ -170,6 +187,9 @@ export function Discussion({
                       <button onClick={() => endSpeaker(r.id)} className="rounded px-2 py-1 text-xs bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors">Zakończ</button>
                     ) : isFormal ? (
                       <>
+                        {canOpenVote && (
+                          <button onClick={() => voteOnMotion(r)} className="rounded px-2 py-1 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Głosuj</button>
+                        )}
                         <button onClick={() => acceptMotion(r)} className="rounded px-2 py-1 text-xs bg-amber-600 text-white hover:bg-amber-500 transition-colors">Przyjmij</button>
                         <button onClick={() => reject(r.id)} className="rounded px-2 py-1 text-xs text-zinc-500 hover:text-red-400 transition-colors">Odrzuć</button>
                       </>
