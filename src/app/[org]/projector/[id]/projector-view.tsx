@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
-import { useLiveSession, tallyOf } from '@/lib/use-live-session';
+import { useLiveSession, tallyOf, fetchElectionResults } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
 import { useCountdown } from '@/components/session/break-banner';
-import type { Vote } from '@/types/database';
+import type { Vote, ElectionResult } from '@/types/database';
 
 export function ProjectorView({ sessionId }: { sessionId: string }) {
-  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount, floorRequests } =
+  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount, candidates, floorRequests } =
     useLiveSession(sessionId);
   const supabase = createClient();
   const breakRemaining = useCountdown(session?.on_break_until ?? null);
@@ -24,6 +24,13 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
       .order('closed_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setLastResult((data as Vote) ?? null));
   }, [activeVote, sessionId, supabase]);
+
+  // Per-candidate results when the last closed vote is an election.
+  const [electionResults, setElectionResults] = useState<ElectionResult[]>([]);
+  useEffect(() => {
+    if (lastResult?.vote_kind === 'election') fetchElectionResults(supabase, lastResult).then(setElectionResults);
+    else setElectionResults([]);
+  }, [lastResult, supabase]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-600">Ładowanie…</div>;
@@ -74,6 +81,19 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
           <div className="text-center">
             <div className="text-3xl uppercase tracking-widest text-amber-400">Przerwa w obradach</div>
             <div className="mt-4 text-[9rem] font-bold leading-none tabular-nums text-amber-200">{breakRemaining}</div>
+          </div>
+        ) : activeVote && activeVote.vote_kind === 'election' ? (
+          <div className="w-full max-w-4xl text-center">
+            <div className="text-lg font-medium uppercase tracking-widest text-amber-400">Wybory — na żywo</div>
+            <div className="mt-2 text-3xl font-semibold text-zinc-100">{activeVote.title}</div>
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              {candidates.map((c) => (
+                <div key={c.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-6 py-5 text-2xl font-semibold text-zinc-100">
+                  {c.name}
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 text-xl tabular-nums text-zinc-500">oddano {activeVote.secret_cast_count} / {presentCount} · {activeVote.seats} do obsadzenia</div>
           </div>
         ) : activeVote ? (
           <div className="w-full max-w-4xl">
@@ -127,6 +147,21 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
                 </div>
               </div>
             )}
+          </div>
+        ) : lastResult && lastResult.vote_kind === 'election' ? (
+          <div className="w-full max-w-3xl text-center">
+            <div className="text-lg uppercase tracking-widest text-zinc-500">Wynik wyborów</div>
+            <div className="mt-2 text-2xl text-zinc-300">{lastResult.title}</div>
+            <div className="mt-8 space-y-2">
+              {electionResults.map((r) => (
+                <div key={r.candidate.id}
+                  className={clsx('flex items-center justify-between rounded-xl px-6 py-3 text-2xl',
+                    r.elected ? 'bg-amber-900/40 text-amber-200 font-semibold' : 'bg-zinc-900/50 text-zinc-300')}>
+                  <span>{r.candidate.name}{r.elected ? ' · wybrany/a' : ''}</span>
+                  <span className="tabular-nums">{r.count}</span>
+                </div>
+              ))}
+            </div>
           </div>
         ) : lastResult ? (
           <div className="text-center">

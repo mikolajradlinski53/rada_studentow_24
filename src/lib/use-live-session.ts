@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import type {
   Session, AgendaItem, Vote, Attendance, Mandate, Profile, Ballot, FloorRequest,
-  BallotChoice, QuorumInfo,
+  VoteCandidate, ElectionResult, BallotChoice, QuorumInfo,
 } from '@/types/database';
 
 export type MandateWithProfile = Mandate & { profile: Profile };
@@ -24,9 +25,28 @@ export interface LiveSessionData {
   presentCount: number;
   /** All active mandates of the session's term (for the chair roll call). */
   roster: MandateWithProfile[];
+  /** Candidates of the active election (empty for motions). */
+  candidates: VoteCandidate[];
   /** Active discussion queue (waiting + currently speaking), ordered by priority. */
   floorRequests: FloorRequest[];
   refetch: () => Promise<void>;
+}
+
+/** Per-candidate tally for an election vote (top `seats` marked elected). */
+export async function fetchElectionResults(supabase: SupabaseClient, vote: Vote): Promise<ElectionResult[]> {
+  const [{ data: cands }, { data: ballots }] = await Promise.all([
+    supabase.from('vote_candidates').select('*').eq('vote_id', vote.id).order('position'),
+    supabase.from('election_ballots').select('candidate_id').eq('vote_id', vote.id),
+  ]);
+  const counts = new Map<string, number>();
+  for (const b of (ballots as { candidate_id: string }[]) ?? []) {
+    counts.set(b.candidate_id, (counts.get(b.candidate_id) ?? 0) + 1);
+  }
+  const ranked = ((cands as VoteCandidate[]) ?? [])
+    .map((c) => ({ candidate: c, count: counts.get(c.id) ?? 0 }))
+    .sort((a, b) => b.count - a.count);
+  const electedIds = new Set(ranked.slice(0, vote.seats).filter((r) => r.count > 0).map((r) => r.candidate.id));
+  return ranked.map((r) => ({ ...r, elected: electedIds.has(r.candidate.id) }));
 }
 
 // Formal motions jump the queue, then ad vocem, then ordinary speaking turns.
@@ -56,6 +76,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [myBallot, setMyBallot] = useState<BallotChoice | null>(null);
   const [quorum, setQuorum] = useState<QuorumInfo | null>(null);
   const [roster, setRoster] = useState<MandateWithProfile[]>([]);
+  const [candidates, setCandidates] = useState<VoteCandidate[]>([]);
   const [floorRequests, setFloorRequests] = useState<FloorRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,6 +144,15 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       setOpenVoteBallots([]);
     }
 
+    // Candidates for an active election.
+    if (vote && vote.vote_kind === 'election') {
+      const { data: cands } = await supabase
+        .from('vote_candidates').select('*').eq('vote_id', vote.id).order('position');
+      setCandidates((cands as VoteCandidate[]) ?? []);
+    } else {
+      setCandidates([]);
+    }
+
     // Have I already voted?
     if (vote && mandate) {
       if (vote.vote_type === 'open') {
@@ -155,6 +185,8 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'election_ballots' }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [sessionId, supabase, refetch]);
@@ -165,7 +197,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   return {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, roster, floorRequests, refetch,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, refetch,
   };
 }
 

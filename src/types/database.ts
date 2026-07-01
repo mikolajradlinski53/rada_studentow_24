@@ -10,6 +10,7 @@ export type AttendanceMode = 'self' | 'chair';
 export type AgendaItemType = 'procedural' | 'discussion' | 'resolution' | 'election' | 'information';
 export type AgendaItemStatus = 'pending' | 'in_progress' | 'completed' | 'postponed';
 export type VoteType = 'open' | 'secret';
+export type VoteKind = 'motion' | 'election';
 export type VoteThreshold = 'simple_majority' | 'absolute_majority' | 'two_thirds';
 export type VoteStatus = 'pending' | 'open' | 'closed' | 'cancelled';
 export type VoteResult = 'passed' | 'rejected' | 'no_quorum';
@@ -156,6 +157,8 @@ export interface Vote {
   session_id: string;
   title: string;
   vote_type: VoteType;
+  vote_kind: VoteKind;
+  seats: number;
   threshold: VoteThreshold;
   status: VoteStatus;
   opened_at: string | null;
@@ -179,6 +182,22 @@ export interface Ballot {
   cast_at: string;
   // Joined
   mandate?: Mandate & { profile?: Profile };
+}
+
+export interface VoteCandidate {
+  id: string;
+  vote_id: string;
+  name: string;
+  mandate_id: string | null;
+  position: number;
+  created_at: string;
+}
+
+/** Per-candidate tally result (computed after close). */
+export interface ElectionResult {
+  candidate: VoteCandidate;
+  count: number;
+  elected: boolean;
 }
 
 export interface FloorRequest {

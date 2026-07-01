@@ -32,9 +32,15 @@ Tabela `floor_requests` (typ/status/kolejność), `sessions.on_break_until`, RLS
 - **TODO v2:** przekucie wniosku formalnego w szybkie głosowanie proceduralne
   (dziś prowadzący przyjmuje/odrzuca decyzją); timer dla „przedłużenia czasu".
 
-### B. Wybory kandydatów
-Głosowanie wyboru osoby/osób z listy (Zarząd, komisje, ławnicy) — wiele opcji,
-próg, wiele mandatów do obsadzenia. Wzorzec eSesji „wybory".
+### B. Wybory kandydatów  ✅ ZROBIONE (v1, anonimowe, jednokrotny wybór)
+Punkt porządku typu „Wybory" → prowadzący otwiera wybory (lista kandydatów +
+liczba miejsc). Radni wybierają **jednego** kandydata; głos **anonimowy** (RPC
+`cast_election_ballot` — niepowiązany głos + kwit do dedupe, turnout w
+`secret_cast_count`). Po zamknięciu: wynik per-kandydat, **top-`seats` = wybrani**.
+Live panel + rzutnik (kandydaci + turnout na żywo, zwycięzcy po zamknięciu).
+Tabele `vote_candidates`, `election_ballots`; `votes.vote_kind`/`seats`.
+- **TODO v2:** wybór wielokrotny (do N przy >1 miejscu), wariant jawny/imienny,
+  próg wyboru / druga tura.
 
 ### C. Auto-protokół  ✅ ZROBIONE (v1, bez transkrypcji/PDF)
 Generowanie strukturalnego szkicu (Markdown) z danych posiedzenia: nagłówek,

@@ -8,6 +8,7 @@ import { useLiveSession, tallyOf } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
 import { Discussion } from '@/components/session/discussion';
 import { RollCall } from '@/components/session/roll-call';
+import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/session/election';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -21,7 +22,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, roster, floorRequests,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests,
   } = useLiveSession(sessionId);
 
   const isChair =
@@ -163,8 +164,21 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         />
       )}
 
-      {/* Active vote */}
-      {activeVote && (
+      {/* Active election */}
+      {activeVote && activeVote.vote_kind === 'election' && (
+        <ElectionActive
+          vote={activeVote}
+          candidates={candidates}
+          myMandate={myMandate}
+          myBallot={myBallot}
+          isCheckedIn={isCheckedIn}
+          isChair={isChair}
+          presentCount={presentCount}
+        />
+      )}
+
+      {/* Active motion vote */}
+      {activeVote && activeVote.vote_kind !== 'election' && (
         <div className="rounded-lg border-2 border-indigo-600 bg-indigo-950/20 p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -266,6 +280,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                       className="rounded px-2 py-1 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors">Głosuj tajnie</button>
                   </div>
                 )}
+                {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (
+                  <ElectionOpener sessionId={sessionId} item={item} />
+                )}
               </div>
               <VoteResults agendaItemId={item.id} />
             </div>
@@ -289,7 +306,12 @@ function VoteResults({ agendaItemId }: { agendaItemId: string }) {
   if (!votes.length) return null;
   return (
     <div className="mt-2 space-y-1.5">
-      {votes.map((v) => (
+      {votes.map((v) => v.vote_kind === 'election' ? (
+        <div key={v.id}>
+          <div className="pl-7 text-xs font-medium text-amber-300">Wybory — wynik ({v.secret_cast_count} głosów)</div>
+          <ElectionResultRow vote={v} />
+        </div>
+      ) : (
         <div key={v.id} className="flex items-center gap-3 text-xs pl-7">
           <span className={clsx('rounded-full px-2 py-0.5 font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
             {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
@@ -315,7 +337,15 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
     <div>
       <h2 className="text-sm font-medium text-zinc-400 mb-3">Zakończone głosowania</h2>
       <div className="space-y-1.5">
-        {votes.map((v) => (
+        {votes.map((v) => v.vote_kind === 'election' ? (
+          <div key={v.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-zinc-300">{v.title}</div>
+              <span className="rounded-full bg-amber-900/50 px-2 py-0.5 text-xs font-medium text-amber-300">Wybory</span>
+            </div>
+            <ElectionResultRow vote={v} />
+          </div>
+        ) : (
           <div key={v.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="text-sm text-zinc-300">{v.title}</div>
             <div className="flex items-center gap-3">
