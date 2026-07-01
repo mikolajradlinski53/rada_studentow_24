@@ -97,8 +97,10 @@ Logowane zdarzenia: `session.opened/closed`, `vote.opened/closed`, `ballot.cast`
 (tylko udział, nigdy wybór — anonimowość tajnych zachowana), `protocol.generated`,
 `resolution.created/signed/published`. Panel `/[org]/audit` (admin/chair/auditor)
 pokazuje czas, osobę, akcję i podpowiedź (sygnatura / typ głosowania).
-- **TODO v2:** filtry (po typie/dacie/posiedzeniu), `attendance.checked_in`,
-  zdarzenia dyskusji, eksport.
+- ✅ **Filtry**: po typie akcji + zakresie dat (URL searchParams, `AuditFilters`),
+  limit 200.
+- **TODO v2:** filtr po posiedzeniu, `attendance.checked_in`, zdarzenia dyskusji,
+  eksport CSV.
 
 ### F. Transmisja (YouTube)  ✅ ZROBIONE (v1, bez nakładek)
 `sessions.stream_url`; prowadzący ustawia link YouTube w panelu live (embed

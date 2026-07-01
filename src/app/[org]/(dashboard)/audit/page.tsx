@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { getOrgContext } from '@/lib/org';
+import { AuditFilters } from './audit-filters';
 
 const ACTION_LABELS: Record<string, string> = {
   'session.opened': 'Otwarto posiedzenie',
@@ -17,28 +18,40 @@ const ACTION_LABELS: Record<string, string> = {
   'resolution.published': 'Opublikowano uchwałę',
 };
 
-export default async function AuditPage({ params }: { params: Promise<{ org: string }> }) {
+export default async function AuditPage({
+  params, searchParams,
+}: {
+  params: Promise<{ org: string }>;
+  searchParams: Promise<{ action?: string; from?: string; to?: string }>;
+}) {
   const { org } = await params;
+  const { action, from, to } = await searchParams;
   const ctx = await getOrgContext(org);
   if (!ctx) notFound();
 
   const supabase = await createServerSupabase();
 
-  const { data: logs } = await supabase
+  let query = supabase
     .from('audit_log')
     .select('*, actor:profiles(full_name)')
-    .eq('org_id', ctx.org.id)
-    .order('created_at', { ascending: false })
-    .limit(100);
+    .eq('org_id', ctx.org.id);
+
+  if (action) query = query.eq('action', action);
+  if (from) query = query.gte('created_at', `${from}T00:00:00`);
+  if (to) query = query.lte('created_at', `${to}T23:59:59`);
+
+  const { data: logs } = await query.order('created_at', { ascending: false }).limit(200);
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-100">Logi audytowe</h1>
         <p className="mt-1 text-sm text-zinc-500">
           Historia działań w systemie — Komisja Rewizyjna
         </p>
       </div>
+
+      <AuditFilters actions={Object.entries(ACTION_LABELS)} />
 
       {!logs?.length ? (
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-12 text-center text-sm text-zinc-500">
