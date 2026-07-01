@@ -95,9 +95,13 @@ pokazuje czas, osobę, akcję i podpowiedź (sygnatura / typ głosowania).
 - **TODO v2:** filtry (po typie/dacie/posiedzeniu), `attendance.checked_in`,
   zdarzenia dyskusji, eksport.
 
-### F. Transmisja (YouTube) + nakładki
-Embed transmisji na stronie posiedzenia/rzutniku, nakładki: aktualny punkt, mówca,
-wyniki głosowania. Wzorzec eSesji „transmisja".
+### F. Transmisja (YouTube)  ✅ ZROBIONE (v1, bez nakładek)
+`sessions.stream_url`; prowadzący ustawia link YouTube w panelu live (embed
+widoczny dla zdalnych radnych). **Publiczna strona** `/[org]/transmisja/[id]`
+(bez logowania — RLS wystawia sesje, które opublikowały stream) z osadzonym
+odtwarzaczem. Parser `youtubeId` (watch/live/youtu.be/embed/shorts).
+- **TODO v2:** nakładki na stronie publicznej (aktualny punkt, mówca, wynik
+  głosowania na żywo) — wymaga publicznego odczytu agendy/głosowań (anon RLS).
 
 ## 🎨 Indywidualny interfejs per-podmiot (przekrojowe, rozwijane stopniowo)
 

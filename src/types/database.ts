@@ -102,6 +102,7 @@ export interface Session {
   closed_at: string | null;
   on_break_until: string | null;
   attendance_mode: AttendanceMode;
+  stream_url: string | null;
   status: SessionStatus;
   chaired_by: string | null;
   protocol_by: string | null;

@@ -34,8 +34,8 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/auth/callback' ||
     request.nextUrl.pathname.startsWith('/public') ||
-    // Public resolution registry: /{orgSlug}/rejestr[/...]
-    /^\/[^/]+\/rejestr(\/|$)/.test(request.nextUrl.pathname);
+    // Public resolution registry + transmission: /{orgSlug}/rejestr|transmisja[/...]
+    /^\/[^/]+\/(rejestr|transmisja)(\/|$)/.test(request.nextUrl.pathname);
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

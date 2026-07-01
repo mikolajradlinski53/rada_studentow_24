@@ -9,6 +9,7 @@ import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/t
 import { Discussion } from '@/components/session/discussion';
 import { RollCall } from '@/components/session/roll-call';
 import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/session/election';
+import { Transmission } from '@/components/session/transmission';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -163,6 +164,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           mode={session.attendance_mode}
         />
       )}
+
+      {/* Transmission (YouTube) */}
+      <Transmission org={org} sessionId={sessionId} streamUrl={session.stream_url} isChair={isChair} />
 
       {/* Active election */}
       {activeVote && activeVote.vote_kind === 'election' && (
