@@ -39,8 +39,10 @@ liczba miejsc). Radni wybierają **jednego** kandydata; głos **anonimowy** (RPC
 `secret_cast_count`). Po zamknięciu: wynik per-kandydat, **top-`seats` = wybrani**.
 Live panel + rzutnik (kandydaci + turnout na żywo, zwycięzcy po zamknięciu).
 Tabele `vote_candidates`, `election_ballots`; `votes.vote_kind`/`seats`.
-- **TODO v2:** wybór wielokrotny (do N przy >1 miejscu), wariant jawny/imienny,
-  próg wyboru / druga tura.
+- ✅ **Wybór wielokrotny**: przy `seats > 1` radny zaznacza **do N** kandydatów
+  (checkboxy + „Oddaj głos"); RPC `cast_election_ballots(uuid[])` waliduje 1..seats,
+  brak duplikatów, przynależność do głosowania; jeden kwit/turnout na wyborcę.
+- **TODO v2:** wariant jawny/imienny, próg wyboru / druga tura.
 
 ### C. Auto-protokół  ✅ ZROBIONE (v1, bez transkrypcji/PDF)
 Generowanie strukturalnego szkicu (Markdown) z danych posiedzenia: nagłówek,

@@ -81,11 +81,21 @@ export function ElectionActive({
   presentCount: number;
 }) {
   const supabase = createClient();
+  const [selected, setSelected] = useState<string[]>([]);
+  const multi = vote.seats > 1;
 
-  const castFor = async (candidateId: string) => {
-    if (!myMandate || myBallot) return;
-    const { error } = await supabase.rpc('cast_election_ballot', {
-      p_vote_id: vote.id, p_mandate_id: myMandate.id, p_candidate_id: candidateId,
+  const toggle = (id: string) => {
+    setSelected((cur) => {
+      if (cur.includes(id)) return cur.filter((x) => x !== id);
+      if (cur.length >= vote.seats) return multi ? cur : [id]; // single-seat: replace
+      return [...cur, id];
+    });
+  };
+
+  const submit = async () => {
+    if (!myMandate || myBallot || selected.length < 1) return;
+    const { error } = await supabase.rpc('cast_election_ballots', {
+      p_vote_id: vote.id, p_mandate_id: myMandate.id, p_candidate_ids: selected,
     });
     if (error) { alert('Nie udało się oddać głosu. Odśwież stronę.'); return; }
     await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { vote_type: 'secret' } });
@@ -108,13 +118,26 @@ export function ElectionActive({
       <p className="mb-4 text-base font-medium text-zinc-100">{vote.title}</p>
 
       {isCheckedIn && !myBallot ? (
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {candidates.map((c) => (
-            <button key={c.id} onClick={() => castFor(c.id)}
-              className="rounded-xl bg-zinc-800 py-4 text-sm font-semibold text-zinc-100 hover:bg-amber-600 hover:text-white transition-colors active:scale-95">
-              {c.name}
-            </button>
-          ))}
+        <div className="space-y-3">
+          {multi && (
+            <p className="text-xs text-amber-300/90">Wybierz do {vote.seats} kandydatów · zaznaczono {selected.length}/{vote.seats}</p>
+          )}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {candidates.map((c) => {
+              const on = selected.includes(c.id);
+              return (
+                <button key={c.id} onClick={() => toggle(c.id)}
+                  className={clsx('rounded-xl py-4 text-sm font-semibold transition-colors active:scale-95',
+                    on ? 'bg-amber-600 text-white' : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700')}>
+                  {multi && <span className="mr-1">{on ? '☑' : '☐'}</span>}{c.name}
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={submit} disabled={selected.length < 1}
+            className="w-full rounded-lg bg-amber-600 py-3.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-40 transition-colors active:scale-95">
+            Oddaj głos{multi ? ` (${selected.length}/${vote.seats})` : ''}
+          </button>
         </div>
       ) : myBallot ? (
         <div className="text-center text-sm text-amber-300">✓ Głos oddany (tajnie)</div>
