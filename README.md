@@ -45,8 +45,12 @@ Lokalnie w `.env.local`, na produkcji w **Vercel → Settings → Environment Va
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://twoj-projekt.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ... (anon / publishable key)
-OPENAI_API_KEY=sk-...   # opcjonalnie — włącza transkrypcję nagrań w auto-protokole
+WHISPER_API_URL=https://whisper.twoj-serwer.pl/v1/audio/transcriptions  # opcjonalnie
 ```
+
+Transkrypcja auto-protokołu używa **self-hostowanego Whispera** (jeden serwer dla
+wszystkich podmiotów, stały koszt zamiast opłat za minutę) — zob.
+[docs/whisper-selfhost.md](docs/whisper-selfhost.md).
 
 (Wartości Supabase: przycisk **Connect** → App Frameworks → Next.js.)
 

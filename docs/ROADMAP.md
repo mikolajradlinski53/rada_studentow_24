@@ -63,10 +63,13 @@ approved → published, „Generuj/Regeneruj szkielet". Strona
   abstrakcyjne (interfejs), żeby wymieniać silnik bez zmian w protokole.
 - Whisper nie jest natywnie streamingowy i real-time na większym modelu wymaga
   GPU — **nie zhostuje go Vercel**. Stąd etapy:
-  1. ✅ **Batch po posiedzeniu** (ZROBIONE): w edytorze protokołu „Wgraj nagranie"
-     → `/api/transcribe` (OpenAI Whisper `whisper-1`, `language=pl`) → tekst
-     dopisany do szkicu. Wymaga `OPENAI_API_KEY`; limit ~24 MB/plik (dłuższe
-     dzielić na fragmenty — Storage-backed upload/chunking = dalej).
+  1. ✅ **Batch po posiedzeniu, self-host** (ZROBIONE): w edytorze protokołu
+     „Wgraj nagranie" → `/api/transcribe` → **self-hostowany serwer Whisper**
+     (OpenAI-compatible, jeden dla wszystkich najemców, `language=pl`) → tekst
+     dopisany do szkicu. Konfiguracja: `WHISPER_API_URL` (+ token/model) —
+     zob. `docs/whisper-selfhost.md`. Stały koszt maszyny zamiast opłat za minutę,
+     dane nie wychodzą do zewnętrznego API. Limit ~4,5 MB/upload (Vercel) —
+     krótkie fragmenty; bezpośredni upload do serwera/Storage = dalej.
   2. **Streaming STT** (Deepgram/AssemblyAI/Azure) lub WhisperLive na GPU — napisy
      na żywo na panelu/rzutniku.
   3. **Self-host Whisper na GPU** (Modal/RunPod/własny box) gdy ważna prywatność/koszt.
