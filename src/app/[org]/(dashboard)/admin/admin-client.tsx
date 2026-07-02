@@ -25,6 +25,7 @@ export function AdminClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<Role>('member');
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +48,15 @@ export function AdminClient({
       {/* Add member */}
       <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
         <div className="flex flex-wrap items-end gap-2">
-          <div className="flex-1 min-w-48">
+          <div className="min-w-44 flex-1">
+            <label className="block text-xs text-zinc-400 mb-1">Imię i nazwisko</label>
+            <input
+              type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jan Kowalski"
+              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none"
+            />
+          </div>
+          <div className="min-w-44 flex-1">
             <label className="block text-xs text-zinc-400 mb-1">Email</label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -67,8 +76,8 @@ export function AdminClient({
           <button
             disabled={isPending || !email.includes('@')}
             onClick={() => run(async () => {
-              const res = await inviteMember(org, email, role);
-              if (res.ok) setEmail('');
+              const res = await inviteMember(org, email, role, fullName);
+              if (res.ok) { setEmail(''); setFullName(''); }
               return res;
             })}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"

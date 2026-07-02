@@ -134,11 +134,18 @@ function SidebarInner({
 
       {/* User */}
       <div className="border-t border-zinc-800 px-4 py-4">
-        <div className="truncate text-sm text-zinc-300">{userName}</div>
+        <Link href={`/${orgSlug}/profile`} onClick={onNavigate} className="block truncate text-sm text-zinc-300 hover:text-zinc-100 transition-colors">
+          {userName}
+        </Link>
         <div className="mt-0.5 text-xs capitalize text-zinc-600">{role}</div>
-        <button onClick={handleLogout} className="mt-3 text-xs text-zinc-500 transition-colors hover:text-zinc-300">
-          Wyloguj się
-        </button>
+        <div className="mt-3 flex items-center gap-3">
+          <Link href={`/${orgSlug}/profile`} onClick={onNavigate} className="text-xs text-zinc-500 transition-colors hover:text-zinc-300">
+            Profil
+          </Link>
+          <button onClick={handleLogout} className="text-xs text-zinc-500 transition-colors hover:text-zinc-300">
+            Wyloguj się
+          </button>
+        </div>
       </div>
     </div>
   );

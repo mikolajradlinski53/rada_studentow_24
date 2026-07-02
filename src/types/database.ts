@@ -82,6 +82,7 @@ export interface Invitation {
   id: string;
   term_id: string;
   email: string;
+  full_name: string | null;
   role: Role;
   label: string | null;
   invited_by: string | null;

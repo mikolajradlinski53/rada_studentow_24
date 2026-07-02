@@ -56,7 +56,7 @@ async function isLastAdmin(
   return (count ?? 0) <= 1;
 }
 
-export async function inviteMember(slug: string, email: string, role: Role): Promise<ActionResult> {
+export async function inviteMember(slug: string, email: string, role: Role, fullName: string): Promise<ActionResult> {
   const ctx = await getOrgContext(slug);
   if (!ctx || ctx.role !== 'admin') return { error: 'Brak uprawnień' };
 
@@ -67,7 +67,7 @@ export async function inviteMember(slug: string, email: string, role: Role): Pro
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from('invitations')
-    .upsert({ term_id: ctx.termId, email: normalized, role }, { onConflict: 'term_id,email' });
+    .upsert({ term_id: ctx.termId, email: normalized, role, full_name: fullName.trim() || null }, { onConflict: 'term_id,email' });
   if (error) return { error: error.message };
 
   revalidatePath(`/${slug}/admin`);

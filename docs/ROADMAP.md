@@ -133,6 +133,9 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   fundament pod dziesiątki niezależnych instancji w jednym wdrożeniu.
 
 ## 🧩 Drobne polish (na bieżąco)
+- ✅ **Imię i nazwisko** zamiast fragmentu maila: admin podaje nazwę przy
+  zaproszeniu (`invitations.full_name` → trigger), a każdy użytkownik może
+  poprawić własne dane na `/[org]/profile` (link w sidebarze).
 - ✅ Rzutnik przy głosowaniu jawnym pokazuje **kto jak zagłosował** (tajne — nie).
 - ✅ **Lista obecności prowadzącego (roll call)** + tryb `attendance_mode`
   (`chair`/`self`): przy stacjonarnym to prowadzący wpisuje obecnych, a RLS blokuje
