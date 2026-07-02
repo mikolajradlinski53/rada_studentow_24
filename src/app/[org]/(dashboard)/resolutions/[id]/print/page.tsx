@@ -42,6 +42,9 @@ export default async function ResolutionPrintPage({ params }: { params: Promise<
         body={r.body}
         dateStr={dateStr}
         signer={(r as { signer?: { full_name?: string } }).signer?.full_name ?? null}
+        headerText={ctx.org.resolution_header}
+        footerText={ctx.org.resolution_footer}
+        font={ctx.org.resolution_font}
       />
     </div>
   );

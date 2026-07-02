@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { OrgModule } from '@/types/database';
+import type { OrgModule, DocFont } from '@/types/database';
 import { updateBranding } from './actions';
 
 const MODULE_LABEL: Record<OrgModule, string> = {
@@ -12,12 +12,16 @@ const TOGGLEABLE: OrgModule[] = ['resolutions', 'audit'];
 
 export function BrandingSection({
   slug, name: name0, accentColor, logoUrl, enabledModules,
+  resolutionHeader, resolutionFooter, resolutionFont,
 }: {
   slug: string;
   name: string;
   accentColor: string | null;
   logoUrl: string | null;
   enabledModules: OrgModule[];
+  resolutionHeader: string | null;
+  resolutionFooter: string | null;
+  resolutionFont: DocFont;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -25,6 +29,9 @@ export function BrandingSection({
   const [accent, setAccent] = useState(accentColor ?? '#4f46e5');
   const [logo, setLogo] = useState(logoUrl ?? '');
   const [modules, setModules] = useState<OrgModule[]>(enabledModules);
+  const [header, setHeader] = useState(resolutionHeader ?? '');
+  const [footer, setFooter] = useState(resolutionFooter ?? '');
+  const [font, setFont] = useState<DocFont>(resolutionFont);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -34,7 +41,10 @@ export function BrandingSection({
   const save = () => {
     setError(null); setSaved(false);
     startTransition(async () => {
-      const res = await updateBranding(slug, { name, accent_color: accent, logo_url: logo, enabled_modules: modules });
+      const res = await updateBranding(slug, {
+        name, accent_color: accent, logo_url: logo, enabled_modules: modules,
+        resolution_header: header, resolution_footer: footer, resolution_font: font,
+      });
       if (res?.error) setError(res.error);
       else { setSaved(true); router.refresh(); }
     });
@@ -86,6 +96,33 @@ export function BrandingSection({
               {MODULE_LABEL[m]}
             </label>
           ))}
+        </div>
+      </div>
+
+      {/* Resolution template */}
+      <div className="mt-6 border-t border-zinc-800 pt-4">
+        <div className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Szablon uchwał</div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs text-zinc-400">Nagłówek dokumentu</label>
+            <textarea value={header} onChange={(e) => { setHeader(e.target.value); setSaved(false); }} rows={2}
+              placeholder="np. Samorząd Studentów Uniwersytetu Ekonomicznego we Wrocławiu&#10;ul. Komandorska 118/120, 53-345 Wrocław"
+              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs text-zinc-400">Stopka dokumentu</label>
+            <textarea value={footer} onChange={(e) => { setFooter(e.target.value); setSaved(false); }} rows={2}
+              placeholder="np. klauzula / miejsce na pieczęć"
+              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Czcionka dokumentu</label>
+            <select value={font} onChange={(e) => { setFont(e.target.value as DocFont); setSaved(false); }}
+              className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">
+              <option value="serif">Szeryfowa (urzędowa, jak Times)</option>
+              <option value="sans">Bezszeryfowa (nowoczesna)</option>
+            </select>
+          </div>
         </div>
       </div>
 

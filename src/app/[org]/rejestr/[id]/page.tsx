@@ -12,7 +12,9 @@ export default async function PublicResolutionPage({ params }: { params: Promise
   const supabase = await createServerSupabase();
 
   const { data: org } = await supabase
-    .from('organizations').select('id, name').eq('slug', slug).maybeSingle();
+    .from('organizations')
+    .select('id, name, resolution_header, resolution_footer, resolution_font')
+    .eq('slug', slug).maybeSingle();
   if (!org) notFound();
 
   const { data: r } = await supabase
@@ -42,6 +44,9 @@ export default async function PublicResolutionPage({ params }: { params: Promise
           body={r.body}
           dateStr={dateStr}
           signer={null}
+          headerText={org.resolution_header}
+          footerText={org.resolution_footer}
+          font={org.resolution_font}
         />
       </div>
     </div>

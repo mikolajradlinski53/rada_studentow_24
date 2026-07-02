@@ -3,13 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { getOrgContext } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
-import type { Role, OrgModule } from '@/types/database';
+import type { Role, OrgModule, DocFont } from '@/types/database';
 
 const ALL_MODULES: OrgModule[] = ['sessions', 'resolutions', 'audit'];
 
 export async function updateBranding(
   slug: string,
-  fields: { name: string; accent_color: string; logo_url: string; enabled_modules: OrgModule[] }
+  fields: {
+    name: string; accent_color: string; logo_url: string; enabled_modules: OrgModule[];
+    resolution_header: string; resolution_footer: string; resolution_font: DocFont;
+  }
 ): Promise<ActionResult> {
   const ctx = await getOrgContext(slug);
   if (!ctx || ctx.role !== 'admin') return { error: 'Brak uprawnień' };
@@ -17,6 +20,7 @@ export async function updateBranding(
 
   // 'sessions' is the core module and cannot be disabled; keep only known modules.
   const modules = Array.from(new Set<OrgModule>(['sessions', ...fields.enabled_modules.filter((m) => ALL_MODULES.includes(m))]));
+  const font: DocFont = fields.resolution_font === 'sans' ? 'sans' : 'serif';
 
   const supabase = await createServerSupabase();
   const { error } = await supabase
@@ -26,6 +30,9 @@ export async function updateBranding(
       accent_color: fields.accent_color.trim() || null,
       logo_url: fields.logo_url.trim() || null,
       enabled_modules: modules,
+      resolution_header: fields.resolution_header.trim() || null,
+      resolution_footer: fields.resolution_footer.trim() || null,
+      resolution_font: font,
     })
     .eq('id', ctx.org.id);
   if (error) return { error: error.message };

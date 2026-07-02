@@ -33,6 +33,9 @@ export default async function AdminPage({ params }: { params: Promise<{ org: str
         accentColor={ctx.org.accent_color}
         logoUrl={ctx.org.logo_url}
         enabledModules={ctx.org.enabled_modules}
+        resolutionHeader={ctx.org.resolution_header}
+        resolutionFooter={ctx.org.resolution_footer}
+        resolutionFont={ctx.org.resolution_font}
       />
       <AdminClient
         org={org}
