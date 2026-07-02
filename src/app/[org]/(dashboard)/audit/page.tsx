@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { getOrgContext } from '@/lib/org';
 import { AuditFilters } from './audit-filters';
+import { ExportCsvButton } from './export-csv-button';
 
 const ACTION_LABELS: Record<string, string> = {
   'session.opened': 'Otwarto posiedzenie',
@@ -44,11 +45,14 @@ export default async function AuditPage({
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-zinc-100">Logi audytowe</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Historia działań w systemie — Komisja Rewizyjna
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">Logi audytowe</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Historia działań w systemie — Komisja Rewizyjna
+          </p>
+        </div>
+        <ExportCsvButton orgId={ctx.org.id} action={action} from={from} to={to} actionLabels={ACTION_LABELS} />
       </div>
 
       <AuditFilters actions={Object.entries(ACTION_LABELS)} />

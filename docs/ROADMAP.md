@@ -99,8 +99,9 @@ Logowane zdarzenia: `session.opened/closed`, `vote.opened/closed`, `ballot.cast`
 pokazuje czas, osobę, akcję i podpowiedź (sygnatura / typ głosowania).
 - ✅ **Filtry**: po typie akcji + zakresie dat (URL searchParams, `AuditFilters`),
   limit 200.
-- **TODO v2:** filtr po posiedzeniu, `attendance.checked_in`, zdarzenia dyskusji,
-  eksport CSV.
+- ✅ **Eksport CSV** (bieżące filtry, do 5000 wpisów; BOM dla Excela/PL) —
+  `lib/csv.ts` (współdzielony helper) + `ExportCsvButton`.
+- **TODO v2:** filtr po posiedzeniu, `attendance.checked_in`, zdarzenia dyskusji.
 
 ### F. Transmisja (YouTube)  ✅ ZROBIONE (v1, bez nakładek)
 `sessions.stream_url`; prowadzący ustawia link YouTube w panelu live (embed
