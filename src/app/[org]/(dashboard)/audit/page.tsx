@@ -72,7 +72,7 @@ export default async function AuditPage({
                 {format(new Date(log.created_at), 'dd.MM.yyyy HH:mm:ss', { locale: pl })}
               </span>
               <span className="shrink-0 text-zinc-400 w-40 truncate">
-                {(log as any).actor?.full_name ?? '—'}
+                {(log as { actor?: { full_name?: string } | null }).actor?.full_name ?? '—'}
               </span>
               <span className="text-zinc-300">
                 {ACTION_LABELS[log.action] ?? log.action}

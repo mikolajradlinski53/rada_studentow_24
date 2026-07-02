@@ -73,8 +73,8 @@ export default async function SessionDetailPage({
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-400">
           <span>{format(date, "EEEE, d MMMM yyyy · HH:mm", { locale: pl })}</span>
           {session.location && <span>· {session.location}</span>}
-          <span>· {(session as any).organ?.short_name}</span>
-          <span>· Kadencja {(session as any).term?.label}</span>
+          <span>· {(session as { organ?: { short_name?: string } }).organ?.short_name}</span>
+          <span>· Kadencja {(session as { term?: { label?: string } }).term?.label}</span>
         </div>
 
         {/* Action buttons */}
