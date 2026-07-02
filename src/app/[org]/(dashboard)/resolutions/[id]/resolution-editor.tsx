@@ -55,17 +55,26 @@ export function ResolutionEditor({
   };
 
   const translateWithAi = async () => {
-    setAi('translate'); setAiMsg(null);
+    setAi('translate'); setAiMsg(null); setShowEn(true);
     const empty = (): Promise<{ text?: string; error?: string }> => Promise.resolve({ text: '' });
-    const [t, l, b] = await Promise.all([
+
+    // Short fields first (awaited), then the long body streamed live into EN.
+    const [t, l] = await Promise.all([
       title.trim() ? runAi('translate_en', title) : empty(),
       legalBasis.trim() ? runAi('translate_en', legalBasis) : empty(),
-      body.trim() ? runAi('translate_en', body) : empty(),
     ]);
-    const err = t.error ?? l.error ?? b.error;
-    if (err) { setAiMsg(err); setAi(null); return; }
-    setTitleEn(t.text ?? ''); setLegalBasisEn(l.text ?? ''); setBodyEn(b.text ?? '');
-    setShowEn(true); setSaved(false);
+    if (t.error ?? l.error) { setAiMsg((t.error ?? l.error)!); setAi(null); return; }
+    setTitleEn(t.text ?? ''); setLegalBasisEn(l.text ?? '');
+
+    if (body.trim()) {
+      setBodyEn('');
+      const res = await runAiStream('translate_en', body, (d) => setBodyEn((b) => b + d));
+      if (res.error) { setAiMsg(res.error); setAi(null); return; }
+    } else {
+      setBodyEn('');
+    }
+
+    setSaved(false);
     setAiMsg('✓ AI przetłumaczyło na EN — sprawdź i zapisz.');
     setAi(null);
   };

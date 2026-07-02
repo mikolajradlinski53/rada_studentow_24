@@ -3,7 +3,28 @@
 Jeden serwer obsługuje **wszystkie** podmioty SaaS. Płacisz stały koszt maszyny,
 zero opłat za minutę/token, dane z posiedzeń nie wychodzą na zewnątrz.
 
-## 0. Serwer
+## Można zacząć ZA DARMO (a potem dołożyć)
+
+Aplikacja odwołuje się tylko do `WHISPER_API_URL` / `LLM_API_URL`, więc przejście
+z „darmowego" na „mocniejszy płatny" to **zmiana zmiennej env + Redeploy**, zero
+zmian w kodzie. Ścieżki na start bez opłat:
+
+1. **Własny komputer + darmowy tunel (najszybciej na pilotaż).**
+   Odpal kontenery Whisper i Ollama (z małym modelem) na swoim PC, a na zewnątrz
+   wystaw je darmowym **Cloudflare Tunnel** (`cloudflared`) albo ngrokiem. URL z
+   tunelu wklejasz do Vercela. Koszt: 0 zł. Minus: komputer musi być włączony,
+   modele CPU wolniejsze. Idealne do testów/pilotażu RUSS.
+2. **Darmowy VM w chmurze „na zawsze".** **Oracle Cloud Free Tier** daje always-free
+   ARM (do 4 OCPU / 24 GB RAM) — uciągnie Whisper (CPU) + małą Ollamę
+   (np. `llama3.2:3b` lub lekki kwant Bielika) bez opłat i bez zależności od laptopa.
+   (Alternatywy z limitami: Hugging Face Spaces CPU, GCP/AWS free tier.)
+3. **Później „dokładamy":** płatny box z GPU (Hetzner GPU, RunPod, Vast.ai) →
+   `large-v3` + Bielik-11B, szybko i w najlepszej jakości. Podmieniasz tylko env.
+
+Kompromis darmowe vs płatne: darmowo/CPU = mniejsze/kwantyzowane modele, wolniej,
+przyzwoita jakość; GPU = duże modele, szybko, najlepsza polszczyzna.
+
+## 0. Serwer (wariant docelowy / płatny)
 
 - **Rekomendacja:** VPS/dedyk z **GPU** (NVIDIA) — Whisper `large-v3` i Bielik
   chodzą szybko. Bez GPU też działa (CPU), ale wolniej (kilka–kilkanaście s/dokument).
