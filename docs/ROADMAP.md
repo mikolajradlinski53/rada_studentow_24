@@ -138,5 +138,6 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   (`chair`/`self`): przy stacjonarnym to prowadzący wpisuje obecnych, a RLS blokuje
   samodzielne odhaczanie się (zdalny radny nie „wejdzie" na głosowanie). Statusy
   present/late/excused/absent w UI.
-- Check-out (`left_early`) w UI; eksport listy obecności.
+- ✅ Check-out (`left_early`) w liście obecności (ustawia `checked_out_at`, nie
+  liczy się do kworum) + **eksport CSV** listy obecności (nazwisko/status/wejście/wyjście).
 - Lint debt: pre-existing `any` casts, set-state-in-effect na live page.
