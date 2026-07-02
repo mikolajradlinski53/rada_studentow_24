@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { ResolutionStatus } from '@/types/database';
-import { runAi } from '@/lib/ai';
+import { runAi, runAiStream } from '@/lib/ai';
 import { saveResolution } from '../actions';
 
 const STATUS_LABEL: Record<ResolutionStatus, string> = {
@@ -46,10 +46,11 @@ export function ResolutionEditor({
 
   const formatWithAi = async () => {
     if (!body.trim() || !confirm('Sformatować treść przez AI? Wynik zastąpi obecną treść (możesz cofnąć nie zapisując).')) return;
-    setAi('format'); setAiMsg(null);
-    const res = await runAi('format_resolution', body);
-    if (res.error) setAiMsg(res.error);
-    else if (res.text) { setBody(res.text); setSaved(false); setAiMsg('✓ AI sformatowało treść — sprawdź i zapisz.'); }
+    const input = body;
+    setAi('format'); setAiMsg(null); setBody('');
+    const res = await runAiStream('format_resolution', input, (d) => setBody((b) => b + d));
+    if (res.error) { setBody(input); setAiMsg(res.error); }
+    else { setSaved(false); setAiMsg('✓ AI sformatowało treść — sprawdź i zapisz.'); }
     setAi(null);
   };
 

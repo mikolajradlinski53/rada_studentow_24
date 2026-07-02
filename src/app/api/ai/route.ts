@@ -56,22 +56,54 @@ export async function POST(request: Request) {
         model: process.env.LLM_MODEL || 'llama3.1',
         messages: [{ role: 'system', content: system }, { role: 'user', content: text }],
         temperature: 0.2,
-        stream: false,
+        stream: true,
       }),
     });
   } catch {
     return NextResponse.json({ error: 'Nie udało się połączyć z serwerem AI.' }, { status: 502 });
   }
 
-  if (!resp.ok) {
-    const detail = (await resp.text()).slice(0, 300);
+  if (!resp.ok || !resp.body) {
+    const detail = (await resp.text().catch(() => '')).slice(0, 300);
     return NextResponse.json({ error: `Błąd AI (${resp.status}). ${detail}` }, { status: 502 });
   }
 
-  const data = await resp.json().catch(() => null);
-  const out = data?.choices?.[0]?.message?.content;
-  if (typeof out !== 'string') {
-    return NextResponse.json({ error: 'Serwer AI zwrócił nieoczekiwaną odpowiedź.' }, { status: 502 });
-  }
-  return NextResponse.json({ text: out.trim() });
+  // Proxy the upstream SSE stream, emitting only the delta content as plain text
+  // so the editor can type it out live.
+  const upstream = resp.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let buffer = '';
+      try {
+        for (;;) {
+          const { done, value } = await upstream.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+          for (const line of lines) {
+            const l = line.trim();
+            if (!l.startsWith('data:')) continue;
+            const payload = l.slice(5).trim();
+            if (payload === '[DONE]') { controller.close(); return; }
+            try {
+              const json = JSON.parse(payload);
+              const delta = json?.choices?.[0]?.delta?.content;
+              if (delta) controller.enqueue(encoder.encode(delta));
+            } catch { /* ignore keep-alive / non-JSON lines */ }
+          }
+        }
+        controller.close();
+      } catch (e) {
+        controller.error(e);
+      }
+    },
+    cancel() { upstream.cancel().catch(() => {}); },
+  });
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }

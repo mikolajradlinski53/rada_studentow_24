@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { ProtocolStatus } from '@/types/database';
-import { runAi } from '@/lib/ai';
+import { runAiStream } from '@/lib/ai';
 import { generateProtocol, saveProtocol } from './actions';
 
 const STATUS_LABEL: Record<ProtocolStatus, string> = {
@@ -39,10 +39,11 @@ export function ProtocolEditor({
 
   const polishWithAi = async () => {
     if (!body.trim() || !confirm('Przepuścić protokół przez AI? Wynik zastąpi obecną treść (możesz cofnąć nie zapisując).')) return;
-    setAiBusy(true); setTranscribeMsg(null);
-    const res = await runAi('polish', body);
-    if (res.error) setTranscribeMsg(res.error);
-    else if (res.text) { setBody(res.text); setSaved(false); setTranscribeMsg('✓ AI sformatowało protokół — sprawdź i zapisz.'); }
+    const input = body;
+    setAiBusy(true); setTranscribeMsg(null); setBody('');
+    const res = await runAiStream('polish', input, (d) => setBody((b) => b + d));
+    if (res.error) { setBody(input); setTranscribeMsg(res.error); }
+    else { setSaved(false); setTranscribeMsg('✓ AI sformatowało protokół — sprawdź i zapisz.'); }
     setAiBusy(false);
   };
 

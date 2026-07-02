@@ -132,7 +132,9 @@ zob. `docs/ai-selfhost.md`.
 - Uchwała: **„Sformatuj treść (AI)"** (§-struktura) + **„Przetłumacz na EN (AI)"**
   (wypełnia wersję angielską).
 - Zawsze **szkic do zatwierdzenia** przez człowieka (nie autorytet prawny).
-- **TODO:** streaming odpowiedzi (efekt „na żywo"), asystent w innych miejscach
+- ✅ **Streaming** — „Ulepsz (AI)" i „Sformatuj treść (AI)" wpisują wynik **na żywo**
+  (trasa `/api/ai` proxuje strumień SSE modelu jako czysty tekst; `runAiStream`).
+- **TODO:** streaming także dla tłumaczenia EN, asystent w innych miejscach
   (podsumowania, wykrywanie wniosków), wybór modelu per-organizacja.
 
 ## 🎨 Indywidualny interfejs per-podmiot (przekrojowe, rozwijane stopniowo)
