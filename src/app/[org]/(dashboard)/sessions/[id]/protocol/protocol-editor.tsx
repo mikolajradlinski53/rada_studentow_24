@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { ProtocolStatus } from '@/types/database';
+import { runAi } from '@/lib/ai';
 import { generateProtocol, saveProtocol } from './actions';
 
 const STATUS_LABEL: Record<ProtocolStatus, string> = {
@@ -33,6 +34,17 @@ export function ProtocolEditor({
   const [transcribing, setTranscribing] = useState(false);
   const [transcribeMsg, setTranscribeMsg] = useState<string | null>(null);
   const hasProtocol = initialBody !== null;
+
+  const [aiBusy, setAiBusy] = useState(false);
+
+  const polishWithAi = async () => {
+    if (!body.trim() || !confirm('Przepuścić protokół przez AI? Wynik zastąpi obecną treść (możesz cofnąć nie zapisując).')) return;
+    setAiBusy(true); setTranscribeMsg(null);
+    const res = await runAi('polish', body);
+    if (res.error) setTranscribeMsg(res.error);
+    else if (res.text) { setBody(res.text); setSaved(false); setTranscribeMsg('✓ AI sformatowało protokół — sprawdź i zapisz.'); }
+    setAiBusy(false);
+  };
 
   const transcribe = async (file: File) => {
     setTranscribing(true); setTranscribeMsg(null);
@@ -75,10 +87,18 @@ export function ProtocolEditor({
         <div className="mt-2 flex items-center justify-between gap-2">
           <h1 className="text-xl font-semibold text-zinc-100">Protokół</h1>
           {canEdit && (
-            <button onClick={generate} disabled={isPending}
-              className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-50 transition-colors">
-              {hasProtocol ? 'Regeneruj szkielet' : 'Generuj szkielet'}
-            </button>
+            <div className="flex items-center gap-2">
+              {hasProtocol && (
+                <button onClick={polishWithAi} disabled={isPending || aiBusy}
+                  className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
+                  {aiBusy ? 'AI pracuje…' : 'Ulepsz (AI)'}
+                </button>
+              )}
+              <button onClick={generate} disabled={isPending}
+                className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-50 transition-colors">
+                {hasProtocol ? 'Regeneruj szkielet' : 'Generuj szkielet'}
+              </button>
+            </div>
           )}
         </div>
         {generatedAt && (

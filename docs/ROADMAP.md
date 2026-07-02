@@ -122,6 +122,19 @@ odtwarzaczem. Parser `youtubeId` (watch/live/youtu.be/embed/shorts).
 - **TODO v2:** nakładki na stronie publicznej (aktualny punkt, mówca, wynik
   głosowania na żywo) — wymaga publicznego odczytu agendy/głosowań (anon RLS).
 
+## 🤖 Asystent AI (self-host, Ollama) — ✅ ZROBIONE (v1)
+
+Self-hostowany LLM (Ollama, OpenAI-compatible) obrabia treść — jeden serwer dla
+wszystkich, stały koszt, dane prywatne. Trasa `/api/ai` (zadania: `polish`,
+`format_resolution`, `translate_en`), konfiguracja `LLM_API_URL`/`LLM_MODEL` —
+zob. `docs/ai-selfhost.md`.
+- Protokół: **„Ulepsz (AI)"** — szkielet/notatki → schludna proza.
+- Uchwała: **„Sformatuj treść (AI)"** (§-struktura) + **„Przetłumacz na EN (AI)"**
+  (wypełnia wersję angielską).
+- Zawsze **szkic do zatwierdzenia** przez człowieka (nie autorytet prawny).
+- **TODO:** streaming odpowiedzi (efekt „na żywo"), asystent w innych miejscach
+  (podsumowania, wykrywanie wniosków), wybór modelu per-organizacja.
+
 ## 🎨 Indywidualny interfejs per-podmiot (przekrojowe, rozwijane stopniowo)
 
 Każdy tenant (RUSS UEW, URSS, Komisja Branżowa PSRP, …) ma czuć, że to **jego**

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { ResolutionStatus } from '@/types/database';
+import { runAi } from '@/lib/ai';
 import { saveResolution } from '../actions';
 
 const STATUS_LABEL: Record<ResolutionStatus, string> = {
@@ -40,6 +41,33 @@ export function ResolutionEditor({
   const [status, setStatus] = useState<ResolutionStatus>(initial.status);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [ai, setAi] = useState<null | 'format' | 'translate'>(null);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
+
+  const formatWithAi = async () => {
+    if (!body.trim() || !confirm('Sformatować treść przez AI? Wynik zastąpi obecną treść (możesz cofnąć nie zapisując).')) return;
+    setAi('format'); setAiMsg(null);
+    const res = await runAi('format_resolution', body);
+    if (res.error) setAiMsg(res.error);
+    else if (res.text) { setBody(res.text); setSaved(false); setAiMsg('✓ AI sformatowało treść — sprawdź i zapisz.'); }
+    setAi(null);
+  };
+
+  const translateWithAi = async () => {
+    setAi('translate'); setAiMsg(null);
+    const empty = (): Promise<{ text?: string; error?: string }> => Promise.resolve({ text: '' });
+    const [t, l, b] = await Promise.all([
+      title.trim() ? runAi('translate_en', title) : empty(),
+      legalBasis.trim() ? runAi('translate_en', legalBasis) : empty(),
+      body.trim() ? runAi('translate_en', body) : empty(),
+    ]);
+    const err = t.error ?? l.error ?? b.error;
+    if (err) { setAiMsg(err); setAi(null); return; }
+    setTitleEn(t.text ?? ''); setLegalBasisEn(l.text ?? ''); setBodyEn(b.text ?? '');
+    setShowEn(true); setSaved(false);
+    setAiMsg('✓ AI przetłumaczyło na EN — sprawdź i zapisz.');
+    setAi(null);
+  };
 
   const save = () => {
     setError(null); setSaved(false);
@@ -97,6 +125,19 @@ export function ResolutionEditor({
             <label className="mb-1 block text-xs text-zinc-400">Treść</label>
             <textarea value={body} onChange={(e) => { setBody(e.target.value); setSaved(false); }} spellCheck={false}
               className="h-[40vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+          </div>
+
+          {/* AI assistant */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={formatWithAi} disabled={ai !== null}
+              className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
+              {ai === 'format' ? 'AI pracuje…' : 'Sformatuj treść (AI)'}
+            </button>
+            <button type="button" onClick={translateWithAi} disabled={ai !== null}
+              className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
+              {ai === 'translate' ? 'AI tłumaczy…' : 'Przetłumacz na EN (AI)'}
+            </button>
+            {aiMsg && <span className="text-xs text-zinc-400">{aiMsg}</span>}
           </div>
 
           {/* English version (optional) */}

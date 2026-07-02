@@ -50,7 +50,9 @@ WHISPER_API_URL=https://whisper.twoj-serwer.pl/v1/audio/transcriptions  # opcjon
 
 Transkrypcja auto-protokołu używa **self-hostowanego Whispera** (jeden serwer dla
 wszystkich podmiotów, stały koszt zamiast opłat za minutę) — zob.
-[docs/whisper-selfhost.md](docs/whisper-selfhost.md).
+[docs/whisper-selfhost.md](docs/whisper-selfhost.md). Asystent treści (ulepszanie
+protokołów, formatowanie uchwał, tłumaczenie PL→EN) używa **self-hostowanego LLM
+(Ollama)** — zob. [docs/ai-selfhost.md](docs/ai-selfhost.md). Oba opcjonalne.
 
 (Wartości Supabase: przycisk **Connect** → App Frameworks → Next.js.)
 
