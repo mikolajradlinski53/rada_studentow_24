@@ -22,7 +22,6 @@ export type FormalMotionType = 'break' | 'extend_time' | 'close_list' | 'reconsi
 export type FloorRequestStatus = 'waiting' | 'speaking' | 'done' | 'withdrawn' | 'rejected';
 
 export type OrgModule = 'sessions' | 'resolutions' | 'audit';
-export type DocFont = 'serif' | 'sans';
 
 export interface Organization {
   id: string;
@@ -31,9 +30,6 @@ export interface Organization {
   logo_url: string | null;
   accent_color: string | null;
   enabled_modules: OrgModule[];
-  resolution_header: string | null;
-  resolution_footer: string | null;
-  resolution_font: DocFont;
   created_at: string;
 }
 
@@ -233,6 +229,9 @@ export interface Resolution {
   title: string;
   body: string;
   legal_basis: string | null;
+  title_en: string | null;
+  body_en: string | null;
+  legal_basis_en: string | null;
   status: ResolutionStatus;
   signed_by: string | null;
   signed_at: string | null;

@@ -80,7 +80,10 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
 export async function saveResolution(
   slug: string,
   id: string,
-  fields: { title: string; body: string; legal_basis: string; status: ResolutionStatus }
+  fields: {
+    title: string; body: string; legal_basis: string; status: ResolutionStatus;
+    title_en: string; body_en: string; legal_basis_en: string;
+  }
 ): Promise<Result> {
   const supabase = await createServerSupabase();
 
@@ -99,6 +102,9 @@ export async function saveResolution(
       title: fields.title,
       body: fields.body,
       legal_basis: fields.legal_basis || null,
+      title_en: fields.title_en.trim() || null,
+      body_en: fields.body_en.trim() || null,
+      legal_basis_en: fields.legal_basis_en.trim() || null,
       status: fields.status,
       ...(signing ? { signed_by: user?.id ?? null, signed_at: new Date().toISOString() } : {}),
     })

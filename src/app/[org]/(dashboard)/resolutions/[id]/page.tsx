@@ -32,7 +32,10 @@ export default async function ResolutionPage({ params }: { params: Promise<{ org
       canEdit={canEdit}
       signerName={(r as { signer?: { full_name?: string } }).signer?.full_name ?? null}
       signedAt={r.signed_at}
-      initial={{ title: r.title, body: r.body, legal_basis: r.legal_basis ?? '', status: r.status }}
+      initial={{
+        title: r.title, body: r.body, legal_basis: r.legal_basis ?? '', status: r.status,
+        title_en: r.title_en ?? '', body_en: r.body_en ?? '', legal_basis_en: r.legal_basis_en ?? '',
+      }}
     />
   );
 }

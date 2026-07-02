@@ -23,13 +23,20 @@ export function ResolutionEditor({
   canEdit: boolean;
   signerName: string | null;
   signedAt: string | null;
-  initial: { title: string; body: string; legal_basis: string; status: ResolutionStatus };
+  initial: {
+    title: string; body: string; legal_basis: string; status: ResolutionStatus;
+    title_en: string; body_en: string; legal_basis_en: string;
+  };
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initial.title);
   const [body, setBody] = useState(initial.body);
   const [legalBasis, setLegalBasis] = useState(initial.legal_basis);
+  const [titleEn, setTitleEn] = useState(initial.title_en);
+  const [bodyEn, setBodyEn] = useState(initial.body_en);
+  const [legalBasisEn, setLegalBasisEn] = useState(initial.legal_basis_en);
+  const [showEn, setShowEn] = useState(!!(initial.title_en || initial.body_en));
   const [status, setStatus] = useState<ResolutionStatus>(initial.status);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -37,7 +44,10 @@ export function ResolutionEditor({
   const save = () => {
     setError(null); setSaved(false);
     startTransition(async () => {
-      const res = await saveResolution(org, id, { title, body, legal_basis: legalBasis, status });
+      const res = await saveResolution(org, id, {
+        title, body, legal_basis: legalBasis, status,
+        title_en: titleEn, body_en: bodyEn, legal_basis_en: legalBasisEn,
+      });
       if (res?.error) setError(res.error);
       else { setSaved(true); router.refresh(); }
     });
@@ -86,8 +96,38 @@ export function ResolutionEditor({
           <div>
             <label className="mb-1 block text-xs text-zinc-400">Treść</label>
             <textarea value={body} onChange={(e) => { setBody(e.target.value); setSaved(false); }} spellCheck={false}
-              className="h-[45vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+              className="h-[40vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
           </div>
+
+          {/* English version (optional) */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+            <button type="button" onClick={() => setShowEn((v) => !v)}
+              className="flex w-full items-center justify-between text-sm text-zinc-300">
+              <span>Wersja angielska (EN) — opcjonalna</span>
+              <span className="text-xs text-zinc-500">{showEn ? 'ukryj ▲' : 'pokaż ▼'}</span>
+            </button>
+            {showEn && (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Title (on…)</label>
+                  <input value={titleEn} onChange={(e) => { setTitleEn(e.target.value); setSaved(false); }}
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Legal basis</label>
+                  <input value={legalBasisEn} onChange={(e) => { setLegalBasisEn(e.target.value); setSaved(false); }}
+                    placeholder="Pursuant to § … of the Regulations …"
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-zinc-400">Body</label>
+                  <textarea value={bodyEn} onChange={(e) => { setBodyEn(e.target.value); setSaved(false); }} spellCheck={false}
+                    className="h-[30vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <select value={status} onChange={(e) => setStatus(e.target.value as ResolutionStatus)}
               className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">

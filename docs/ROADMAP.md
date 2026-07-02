@@ -92,8 +92,14 @@ Rejestr `/[org]/resolutions` linkuje do edytora i druku.
   jako trasę publiczną, RLS wystawia tylko uchwały `published` + dane organizacji.
   `resolutions.org_id` zdenormalizowany, by anon mógł filtrować bez czytania
   sessions/organs. Wspólny komponent `ResolutionDocument` (druk + publiczny).
-- **TODO v2:** generowany PDF (`@react-pdf/renderer`) zamiast druku, e-podpis,
-  nazwisko podpisującego w publicznym dokumencie (denormalizacja).
+- ✅ **Dwujęzyczność (PL/EN)**: opcjonalne pola `title_en/body_en/legal_basis_en`
+  w edytorze; dokument (druk + publiczny) z przełącznikiem PL|EN (fallback do PL).
+- **TODO — twarde szablony `.docx`**: wgrany przez Przewodniczącego plik .docx
+  (papier firmowy + placeholdery) wypełniany danymi uchwały (docxtemplater +
+  Supabase Storage) → pobranie gotowego .docx. Zastępuje „miękkie" szablony
+  (nagłówek/stopka/czcionka — wycofane).
+- **TODO v2:** generowany PDF, e-podpis, nazwisko podpisującego w publicznym
+  dokumencie.
 
 ### E. Komisja Rewizyjna — realny audit log  ✅ ZROBIONE (v1)
 Funkcja `log_audit` (SECURITY DEFINER, jedyna ścieżka zapisu — bezpośrednie
