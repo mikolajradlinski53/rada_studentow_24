@@ -45,9 +45,10 @@ Lokalnie w `.env.local`, na produkcji w **Vercel → Settings → Environment Va
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://twoj-projekt.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ... (anon / publishable key)
+OPENAI_API_KEY=sk-...   # opcjonalnie — włącza transkrypcję nagrań w auto-protokole
 ```
 
-(Wartości: Supabase → przycisk **Connect** → App Frameworks → Next.js.)
+(Wartości Supabase: przycisk **Connect** → App Frameworks → Next.js.)
 
 ### 2. Baza — migracje
 

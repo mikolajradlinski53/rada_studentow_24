@@ -30,7 +30,27 @@ export function ProtocolEditor({
   const [status, setStatus] = useState<ProtocolStatus>(initialStatus);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcribeMsg, setTranscribeMsg] = useState<string | null>(null);
   const hasProtocol = initialBody !== null;
+
+  const transcribe = async (file: File) => {
+    setTranscribing(true); setTranscribeMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { setTranscribeMsg(data.error ?? 'Nie udało się przetranskrybować.'); return; }
+      setBody((b) => `${b}\n\n${(data.text as string).trim()}`.trim());
+      setSaved(false);
+      setTranscribeMsg('✓ Dodano transkrypcję na końcu — sprawdź i zapisz.');
+    } catch {
+      setTranscribeMsg('Błąd sieci podczas transkrypcji.');
+    } finally {
+      setTranscribing(false);
+    }
+  };
 
   const run = (fn: () => Promise<{ ok?: true; error?: string }>, after?: () => void) => {
     setError(null); setSaved(false);
@@ -81,6 +101,20 @@ export function ProtocolEditor({
         </div>
       ) : canEdit ? (
         <div className="space-y-3">
+          {/* Transcription (Whisper) — upload a recording, text is appended */}
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+            <div className="min-w-0">
+              <div className="text-sm text-zinc-300">Transkrypcja nagrania</div>
+              <div className="text-xs text-zinc-600">Wgraj audio (≤ 24 MB, dłuższe podziel na fragmenty) — tekst dopisze się na końcu.</div>
+            </div>
+            <label className="ml-auto shrink-0 cursor-pointer rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
+              {transcribing ? 'Transkrybuję…' : 'Wgraj nagranie'}
+              <input type="file" accept="audio/*" className="hidden" disabled={transcribing}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) transcribe(f); e.target.value = ''; }} />
+            </label>
+          </div>
+          {transcribeMsg && <p className="text-xs text-zinc-400">{transcribeMsg}</p>}
+
           <textarea
             value={body}
             onChange={(e) => { setBody(e.target.value); setSaved(false); }}
