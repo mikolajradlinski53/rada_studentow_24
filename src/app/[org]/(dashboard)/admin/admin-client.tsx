@@ -123,7 +123,7 @@ export function AdminClient({
         <div className="mb-6 flex gap-3 rounded-xl border border-amber-900/60 bg-amber-950/30 p-3.5 text-[13px] leading-relaxed text-amber-200/90">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
           <p>
-            Hasła tymczasowe są wyłączone — brakuje <code className="rounded bg-amber-900/40 px-1">SUPABASE_SERVICE_ROLE_KEY</code> w
+            Hasła tymczasowe są wyłączone, brakuje <code className="rounded bg-amber-900/40 px-1">SUPABASE_SERVICE_ROLE_KEY</code> w
             zmiennych środowiskowych. Radni mogą się logować linkiem z maila.
           </p>
         </div>
@@ -188,7 +188,7 @@ export function AdminClient({
                 <Avatar name={m.profile?.full_name || m.profile?.email || '?'} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[15px] text-zinc-100">
-                    {m.profile?.full_name ?? '—'}
+                    {m.profile?.full_name ?? '-'}
                     {m.id === myMandateId && <span className="ml-1.5 text-[13px] text-zinc-500">(Ty)</span>}
                   </div>
                   <div className="truncate text-[13px] text-zinc-500">
@@ -250,7 +250,7 @@ export function AdminClient({
         {selectedInvite && (
           <div className="space-y-3">
             <p className="text-[14px] leading-relaxed text-zinc-400">
-              Ta osoba jeszcze się nie zalogowała. Nadaj jej hasło tymczasowe i wyślij — albo niech zaloguje się
+              Ta osoba jeszcze się nie zalogowała. Nadaj jej hasło tymczasowe i wyślij, albo niech zaloguje się
               linkiem z maila na adres <span className="text-zinc-200">{selectedInvite.email}</span>.
             </p>
             {passwordsEnabled ? (
@@ -280,7 +280,7 @@ export function AdminClient({
       {/* Issued passwords — shown once */}
       <Sheet open={!!issued} onClose={() => setIssued(null)}
         title={issued && issued.length > 1 ? `Hasła tymczasowe (${issued.length})` : 'Hasło tymczasowe'}
-        description="Widoczne tylko teraz — przekaż je od razu. Przy pierwszym logowaniu trzeba ustawić własne.">
+        description="Widoczne tylko teraz, przekaż je od razu. Przy pierwszym logowaniu trzeba ustawić własne.">
         {issued && <IssuedList issued={issued} failures={issueFailures} orgName={orgName} />}
       </Sheet>
     </div>
@@ -316,7 +316,7 @@ function AddSheet({
             <Check className="h-6 w-6" />
           </div>
           <p className="mt-3 text-[15px] text-zinc-200">{done}</p>
-          <p className="mt-1 text-[13px] text-zinc-500">Znajdziesz ich w „Oczekują” — stamtąd nadasz hasła.</p>
+          <p className="mt-1 text-[13px] text-zinc-500">Znajdziesz ich w „Oczekują”, stamtąd nadasz hasła.</p>
           <div className="mt-5 grid grid-cols-2 gap-2.5">
             <button onClick={() => setDone(null)}
               className="press h-12 rounded-xl border border-zinc-700 text-[15px] text-zinc-200">Dodaj kolejnych</button>
@@ -398,13 +398,13 @@ function IssuedList({ issued, failures, orgName }: { issued: IssuedPassword[]; f
         <button onClick={async () => { await copyText(all); setCopiedAll(true); navigator.vibrate?.(20); }}
           className="press flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700 text-[15px] text-zinc-200">
           {copiedAll ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-          {copiedAll ? 'Skopiowano — wklej do arkusza' : 'Kopiuj wszystkie (do Excela)'}
+          {copiedAll ? 'Skopiowano, wklej do arkusza' : 'Kopiuj wszystkie (do Excela)'}
         </button>
       )}
       {failures.length > 0 && (
         <div className="rounded-xl border border-amber-900/60 bg-amber-950/30 p-3 text-[13px] text-amber-200/90">
           <div className="mb-1 font-medium">Nie udało się dla {failures.length}:</div>
-          {failures.map((f) => <div key={f.email}>{f.email} — {f.error}</div>)}
+          {failures.map((f) => <div key={f.email}>{f.email}, {f.error}</div>)}
         </div>
       )}
     </div>
@@ -434,7 +434,7 @@ function ShareButton({ text, label, className }: { text: string; label: string; 
   return (
     <button
       onClick={async () => {
-        const r = await shareOrCopy(text, 'RadaStudentów24 — dostęp');
+        const r = await shareOrCopy(text, 'Dostęp do RadaStudentów24');
         if (r === 'copied') { setState('copied'); setTimeout(() => setState('idle'), 2500); }
       }}
       className={clsx('press flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-semibold text-white hover:bg-indigo-500', className)}>
@@ -449,14 +449,14 @@ function inviteText({ orgName, email, name, password, role }: { orgName: string;
   const first = name?.trim().split(/\s+/)[0];
   const link = `${origin}/login?email=${encodeURIComponent(email)}`;
   return [
-    `Cześć${first ? ` ${first}` : ''}! Masz dostęp do RadaStudentów24 — ${orgName}${role ? ` (${ROLE_LABELS[role]})` : ''}.`,
+    `Cześć${first ? ` ${first}` : ''}! Masz dostęp do RadaStudentów24, ${orgName}${role ? ` (${ROLE_LABELS[role]})` : ''}.`,
     '',
     `1. Otwórz: ${link}`,
     `2. Email: ${email}`,
-    password ? `3. Hasło tymczasowe: ${password}` : '3. Wybierz „Link z maila” — link przyjdzie na ten adres.',
+    password ? `3. Hasło tymczasowe: ${password}` : '3. Wybierz „Link z maila”, link przyjdzie na ten adres.',
     '',
     password ? 'Po zalogowaniu ustawisz własne hasło.' : '',
-    'Na telefonie dodaj stronę do ekranu głównego — dostaniesz powiadomienia o głosowaniach.',
+    'Na telefonie dodaj stronę do ekranu głównego, dostaniesz powiadomienia o głosowaniach.',
   ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
 }
 
@@ -511,7 +511,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
     <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-10 text-center">
       <Users className="mx-auto h-8 w-8 text-zinc-600" />
       <p className="mt-3 text-[15px] text-zinc-300">Nikt jeszcze nie ma dostępu</p>
-      <p className="mt-1 text-[13px] text-zinc-500">Dodaj radnych — możesz wkleić całą listę naraz.</p>
+      <p className="mt-1 text-[13px] text-zinc-500">Dodaj radnych, możesz wkleić całą listę naraz.</p>
       <button onClick={onAdd} className="press mt-4 h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white">Dodaj radnych</button>
     </div>
   );

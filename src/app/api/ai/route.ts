@@ -28,7 +28,7 @@ const PROMPTS: Record<string, string> = {
 export async function POST(request: Request) {
   const url = process.env.LLM_API_URL;
   if (!url) {
-    return NextResponse.json({ error: 'Asystent AI niedostępny — administrator nie ustawił LLM_API_URL.' }, { status: 501 });
+    return NextResponse.json({ error: 'Asystent AI niedostępny, administrator nie ustawił LLM_API_URL.' }, { status: 501 });
   }
 
   const supabase = await createServerSupabase();
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Niepoprawne dane wejściowe.' }, { status: 400 });
   }
   if (text.length > 40000) {
-    return NextResponse.json({ error: 'Tekst za długi — podziel na fragmenty.' }, { status: 413 });
+    return NextResponse.json({ error: 'Tekst za długi, podziel na fragmenty.' }, { status: 413 });
   }
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

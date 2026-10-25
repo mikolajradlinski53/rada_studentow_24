@@ -86,7 +86,7 @@ export function RollCall({
           const current = statusBy.get(m.id) ?? 'absent';
           return (
             <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-800/80 bg-zinc-900/40 px-3 py-2">
-              <span className="min-w-0 truncate text-sm text-zinc-200">{m.profile?.full_name ?? '—'}</span>
+              <span className="min-w-0 truncate text-sm text-zinc-200">{m.profile?.full_name ?? '-'}</span>
               <div className="flex flex-wrap gap-1">
                 {OPTIONS.map((o) => (
                   <button key={o.value} onClick={() => set(m.id, o.value)}

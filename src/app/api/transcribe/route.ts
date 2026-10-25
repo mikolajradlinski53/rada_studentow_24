@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const url = process.env.WHISPER_API_URL;
   if (!url) {
     return NextResponse.json(
-      { error: 'Transkrypcja niedostępna — administrator nie ustawił WHISPER_API_URL.' },
+      { error: 'Transkrypcja niedostępna, administrator nie ustawił WHISPER_API_URL.' },
       { status: 501 }
     );
   }

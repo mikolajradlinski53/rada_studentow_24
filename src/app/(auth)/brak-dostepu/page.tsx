@@ -21,7 +21,7 @@ export default async function NoAccessPage() {
         <p className="mt-1 break-all text-[15px] font-medium text-zinc-200">{user.email}</p>
         <p className="mt-4 text-[15px] leading-relaxed text-zinc-400">
           Ten adres nie ma aktywnego mandatu w żadnym organie. Poproś administratora
-          samorządu o zaproszenie <span className="text-zinc-200">dokładnie na ten adres</span> — potem
+          samorządu o zaproszenie <span className="text-zinc-200">dokładnie na ten adres</span>, potem
           stuknij „Sprawdź ponownie”.
         </p>
         <NoAccessActions />

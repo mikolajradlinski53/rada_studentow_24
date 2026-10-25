@@ -91,7 +91,7 @@ export async function enablePush(): Promise<PushSubscription> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
     throw new Error(permission === 'denied'
-      ? 'Powiadomienia są zablokowane — włącz je w ustawieniach przeglądarki / telefonu.'
+      ? 'Powiadomienia są zablokowane, włącz je w ustawieniach przeglądarki / telefonu.'
       : 'Nie udzielono zgody na powiadomienia.');
   }
   const reg = await registration();

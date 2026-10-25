@@ -184,7 +184,7 @@ async function issueOne(
       .eq('is_active', true)
       .neq('terms.organs.org_id', ctx.org.id)
       .limit(1);
-    if (elsewhere?.length) return { error: 'Ta osoba ma mandat także w innej organizacji — hasło może zmienić tylko ona sama.' };
+    if (elsewhere?.length) return { error: 'Ta osoba ma mandat także w innej organizacji, hasło może zmienić tylko ona sama.' };
 
     const { data: existing } = await admin.auth.admin.getUserById(profile.id);
     const { error } = await admin.auth.admin.updateUserById(profile.id, {

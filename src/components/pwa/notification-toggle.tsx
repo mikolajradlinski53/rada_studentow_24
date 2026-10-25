@@ -69,7 +69,7 @@ export function NotificationSettings() {
     loading: 'Sprawdzanie…',
     supported: 'Sprawdzanie…',
     on: 'To urządzenie dostaje powiadomienia o otwarciu posiedzenia i każdego głosowania.',
-    off: 'Dostaniesz powiadomienie, gdy prowadzący otworzy posiedzenie lub głosowanie — nawet przy zablokowanym telefonie.',
+    off: 'Dostaniesz powiadomienie, gdy prowadzący otworzy posiedzenie lub głosowanie, nawet przy zablokowanym telefonie.',
     denied: 'Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki lub telefonu, a potem odśwież stronę.',
     'needs-install': 'Na iPhonie powiadomienia działają tylko w zainstalowanej aplikacji: Udostępnij → Do ekranu początkowego, potem otwórz ją z ikony.',
     unsupported: 'Ta przeglądarka nie obsługuje powiadomień push. Spróbuj w Chrome, Safari (iOS 16.4+) albo Firefox.',

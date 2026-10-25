@@ -124,7 +124,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   // mandate_id -> name, for open-vote voter chips
   const nameByMandate = new Map(
-    attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '—'])
+    attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '-'])
   );
 
   return (
@@ -300,7 +300,7 @@ function VoteResults({ agendaItemId }: { agendaItemId: string }) {
     <div className="mt-2 space-y-1.5">
       {votes.map((v) => v.vote_kind === 'election' ? (
         <div key={v.id}>
-          <div className="pl-7 text-xs font-medium text-amber-300">Wybory — wynik ({v.secret_cast_count} głosów)</div>
+          <div className="pl-7 text-xs font-medium text-amber-300">Wynik wyborów ({v.secret_cast_count} głosów)</div>
           <ElectionResultRow vote={v} />
         </div>
       ) : (
@@ -341,7 +341,7 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
           <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}–{v.votes_against}–{v.votes_abstain}</span>
+              <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}-{v.votes_against}-{v.votes_abstain}</span>
               <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
                 {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
               </span>

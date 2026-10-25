@@ -1,7 +1,9 @@
 @import "tailwindcss";
+@import "./theme.css";
 
 :root {
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   /* Motion tokens — strong ease-out for UI, iOS sheet curve for drawers. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
@@ -70,9 +72,9 @@ button, a, [role="button"], input, select, textarea, label {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: var(--color-zinc-700);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: var(--color-zinc-600);
 }

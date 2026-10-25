@@ -24,7 +24,7 @@ export default async function PublicRegistryPage({ params }: { params: Promise<{
         <header className="mb-8">
           <div className="text-xs uppercase tracking-widest text-zinc-500">{org.name}</div>
           <h1 className="mt-1 text-2xl font-semibold text-zinc-100">Rejestr uchwał</h1>
-          <p className="mt-1 text-sm text-zinc-500">Uchwały opublikowane — dostęp publiczny</p>
+          <p className="mt-1 text-sm text-zinc-500">Uchwały opublikowane, dostęp publiczny</p>
         </header>
 
         {!resolutions?.length ? (

@@ -95,7 +95,7 @@ export function BrandingSection({
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
           {isPending ? 'Zapisywanie…' : 'Zapisz wygląd'}
         </button>
-        {saved && <span className="text-xs text-emerald-400">✓ Zapisano — odśwież, by zobaczyć zmiany w menu</span>}
+        {saved && <span className="text-xs text-emerald-400">Zapisano, odśwież, by zobaczyć zmiany w menu</span>}
       </div>
     </div>
   );

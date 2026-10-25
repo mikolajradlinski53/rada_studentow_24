@@ -19,7 +19,7 @@ export default async function SetPasswordPage() {
           </div>
           <h1 className="mt-5 text-xl font-semibold tracking-tight text-zinc-50">Ustaw własne hasło</h1>
           <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
-            Logujesz się hasłem tymczasowym od administratora. Wybierz swoje — tylko Ty
+            Logujesz się hasłem tymczasowym od administratora. Wybierz własne. Tylko Ty
             będziesz je znać.
           </p>
           <p className="mt-2 break-all text-[13px] text-zinc-500">{user.email}</p>

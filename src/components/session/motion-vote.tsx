@@ -69,7 +69,7 @@ export function MotionVoteCard({
                     b.choice === 'for' ? 'bg-emerald-900/40 text-emerald-300'
                       : b.choice === 'against' ? 'bg-red-900/40 text-red-300'
                       : 'bg-zinc-800 text-zinc-400')}>
-                  {b.mandate_id ? nameByMandate.get(b.mandate_id) ?? '—' : '—'}
+                  {b.mandate_id ? nameByMandate.get(b.mandate_id) ?? '-' : '-'}
                 </span>
               ))}
             </div>

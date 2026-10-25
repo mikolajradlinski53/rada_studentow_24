@@ -50,7 +50,7 @@ export function ResolutionEditor({
     setAi('format'); setAiMsg(null); setBody('');
     const res = await runAiStream('format_resolution', input, (d) => setBody((b) => b + d));
     if (res.error) { setBody(input); setAiMsg(res.error); }
-    else { setSaved(false); setAiMsg('✓ AI sformatowało treść — sprawdź i zapisz.'); }
+    else { setSaved(false); setAiMsg('AI sformatowało treść, sprawdź i zapisz.'); }
     setAi(null);
   };
 
@@ -75,7 +75,7 @@ export function ResolutionEditor({
     }
 
     setSaved(false);
-    setAiMsg('✓ AI przetłumaczyło na EN — sprawdź i zapisz.');
+    setAiMsg('AI przetłumaczyło na EN, sprawdź i zapisz.');
     setAi(null);
   };
 
@@ -154,7 +154,7 @@ export function ResolutionEditor({
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
             <button type="button" onClick={() => setShowEn((v) => !v)}
               className="flex w-full items-center justify-between text-sm text-zinc-300">
-              <span>Wersja angielska (EN) — opcjonalna</span>
+              <span>Wersja angielska (EN), opcjonalna</span>
               <span className="text-xs text-zinc-500">{showEn ? 'ukryj ▲' : 'pokaż ▼'}</span>
             </button>
             {showEn && (
@@ -188,7 +188,7 @@ export function ResolutionEditor({
               className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
               {isPending ? 'Zapisywanie…' : 'Zapisz'}
             </button>
-            {saved && <span className="text-xs text-emerald-400">✓ Zapisano</span>}
+            {saved && <span className="text-xs text-emerald-400">Zapisano</span>}
             <span className="text-xs text-zinc-600">Ustawienie „Uchwalona"/„Opublikowana" podpisuje uchwałę.</span>
           </div>
         </div>

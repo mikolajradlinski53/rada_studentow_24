@@ -40,7 +40,7 @@ export function ProfileForm({ org, initialName, email }: { org: string; initialN
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
           {isPending ? 'Zapisywanie…' : 'Zapisz'}
         </button>
-        {saved && <span className="text-xs text-emerald-400">✓ Zapisano</span>}
+        {saved && <span className="text-xs text-emerald-400">Zapisano</span>}
       </div>
     </div>
   );

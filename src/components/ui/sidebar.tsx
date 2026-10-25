@@ -203,7 +203,7 @@ function SidebarInner({
         <Link href={liveHref}
           className="mx-2 mt-3 flex items-center gap-2 rounded-md border border-emerald-800/70 bg-emerald-950/40 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-950/70">
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-          Trwa posiedzenie — wejdź
+          Trwa posiedzenie, wejdź
         </Link>
       )}
 

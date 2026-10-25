@@ -67,7 +67,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
     .eq('status', 'done');
 
   type NamedRow = { status?: string; formal_type?: string | null; minutes?: number | null; mandate?: { profile?: { full_name?: string } | null } | null };
-  const nameOf = (r: NamedRow) => r.mandate?.profile?.full_name ?? '—';
+  const nameOf = (r: NamedRow) => r.mandate?.profile?.full_name ?? '-';
 
   // Named voters for open votes.
   const voteData: ProtocolData['votes'] = [];

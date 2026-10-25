@@ -49,7 +49,7 @@ export default async function AuditPage({
         <div>
           <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Logi audytowe</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Historia działań w systemie — Komisja Rewizyjna
+            Historia działań w systemie, Komisja Rewizyjna
           </p>
         </div>
         <ExportCsvButton orgId={ctx.org.id} action={action} from={from} to={to} actionLabels={ACTION_LABELS} />
@@ -72,7 +72,7 @@ export default async function AuditPage({
                 {format(new Date(log.created_at), 'dd.MM.yyyy HH:mm:ss', { locale: pl })}
               </span>
               <span className="shrink-0 text-zinc-400 w-40 truncate">
-                {(log as { actor?: { full_name?: string } | null }).actor?.full_name ?? '—'}
+                {(log as { actor?: { full_name?: string } | null }).actor?.full_name ?? '-'}
               </span>
               <span className="text-zinc-300">
                 {ACTION_LABELS[log.action] ?? log.action}

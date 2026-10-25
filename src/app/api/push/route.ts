@@ -114,7 +114,7 @@ async function buildPayload(
 
   return {
     title: '🔔 Posiedzenie rozpoczęte',
-    body: `${session.title} — potwierdź obecność`,
+    body: `${session.title}, potwierdź obecność`,
     url,
     tag: `session-${id}`,
   };

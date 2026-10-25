@@ -72,7 +72,7 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
           <CalendarPlus className="mx-auto h-8 w-8 text-zinc-600" />
           <p className="mt-3 text-[15px] text-zinc-300">Brak posiedzeń</p>
           <p className="mt-1 text-[13px] text-zinc-500">
-            {canCreate ? 'Zaplanuj pierwsze — radni zobaczą porządek obrad.' : 'Gdy prowadzący zaplanuje posiedzenie, pojawi się tutaj.'}
+            {canCreate ? 'Zaplanuj pierwsze, radni zobaczą porządek obrad.' : 'Gdy prowadzący zaplanuje posiedzenie, pojawi się tutaj.'}
           </p>
           {canCreate && (
             <Link href={`/${org}/sessions/new`}

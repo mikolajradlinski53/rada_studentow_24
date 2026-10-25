@@ -54,7 +54,7 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
   return (
     <div className="mt-2 w-full space-y-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4}
-        placeholder={'Kandydaci — jeden w wierszu:\nJan Kowalski\nAnna Nowak'}
+        placeholder={'Kandydaci, jeden w wierszu:\nJan Kowalski\nAnna Nowak'}
         className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-zinc-400">Miejsca do obsadzenia</label>
@@ -142,7 +142,7 @@ export function ElectionActive({
           </button>
         </div>
       ) : myBallot ? (
-        <div className="text-center text-sm text-amber-300">✓ Głos oddany (tajnie)</div>
+        <div className="text-center text-sm text-amber-300">Głos oddany (tajnie)</div>
       ) : (
         <p className="text-center text-sm text-zinc-500">Potwierdź obecność, aby głosować.</p>
       )}

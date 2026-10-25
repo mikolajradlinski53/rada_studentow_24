@@ -33,10 +33,10 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
   }, [lastResult, supabase]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-600">Ładowanie…</div>;
+    return <div className="theme-fixed flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-600">Ładowanie…</div>;
   }
   if (!session) {
-    return <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-600">Brak posiedzenia</div>;
+    return <div className="theme-fixed flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-600">Brak posiedzenia</div>;
   }
 
   const tally = tallyOf(activeVote, openVoteBallots);
@@ -44,12 +44,12 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
 
   // Open vote: who voted how (named voting is public — show it on the beamer).
   const nameByMandate = new Map(
-    attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '—'])
+    attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '-'])
   );
   const votersByChoice = { for: [] as string[], against: [] as string[], abstain: [] as string[] };
   if (activeVote?.vote_type === 'open') {
     for (const b of openVoteBallots) {
-      if (b.mandate_id) votersByChoice[b.choice].push(nameByMandate.get(b.mandate_id) ?? '—');
+      if (b.mandate_id) votersByChoice[b.choice].push(nameByMandate.get(b.mandate_id) ?? '-');
     }
   }
 
@@ -57,7 +57,7 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
   const queue = floorRequests.filter((r) => r.status === 'waiting');
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 px-10 py-8 text-zinc-100">
+    <div className="theme-fixed flex min-h-screen flex-col bg-zinc-950 px-10 py-8 text-zinc-100">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
         <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
           </div>
         ) : activeVote && activeVote.vote_kind === 'election' ? (
           <div className="w-full max-w-4xl text-center">
-            <div className="text-lg font-medium uppercase tracking-widest text-amber-400">Wybory — na żywo</div>
+            <div className="text-lg font-medium uppercase tracking-widest text-amber-400">Wybory, na żywo</div>
             <div className="mt-2 text-3xl font-semibold text-zinc-100">{activeVote.title}</div>
             <div className="mt-8 grid grid-cols-2 gap-4">
               {candidates.map((c) => (
@@ -99,7 +99,7 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
           <div className="w-full max-w-4xl">
             <div className="mb-8 text-center">
               <div className="text-lg font-medium uppercase tracking-widest text-indigo-400">
-                Głosowanie {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'} — na żywo
+                Głosowanie {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'}, na żywo
               </div>
               <div className="mt-2 text-3xl font-semibold text-zinc-100">{activeVote.title}</div>
             </div>
@@ -127,21 +127,21 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
               <div className="text-center">
                 <div className="text-[10rem] font-bold leading-none tabular-nums text-zinc-100">{tally.cast}</div>
                 <div className="mt-4 text-2xl text-zinc-400">oddanych głosów z {presentCount} obecnych</div>
-                <div className="mt-2 text-lg uppercase tracking-widest text-indigo-400">głosowanie tajne — wynik po zamknięciu</div>
+                <div className="mt-2 text-lg uppercase tracking-widest text-indigo-400">głosowanie tajne, wynik po zamknięciu</div>
               </div>
             )}
           </div>
         ) : speaker ? (
           <div className="text-center">
             <div className="text-2xl uppercase tracking-widest text-indigo-400">Głos ma</div>
-            <div className="mt-4 text-7xl font-bold text-zinc-100">{speaker.mandate?.profile?.full_name ?? '—'}</div>
+            <div className="mt-4 text-7xl font-bold text-zinc-100">{speaker.mandate?.profile?.full_name ?? '-'}</div>
             {queue.length > 0 && (
               <div className="mt-10">
                 <div className="text-sm uppercase tracking-widest text-zinc-600">Kolejka</div>
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
                   {queue.map((r, i) => (
                     <span key={r.id} className="rounded-full bg-zinc-800 px-4 py-1.5 text-lg text-zinc-300">
-                      {i + 1}. {r.mandate?.profile?.full_name ?? '—'}
+                      {i + 1}. {r.mandate?.profile?.full_name ?? '-'}
                     </span>
                   ))}
                 </div>
@@ -173,8 +173,8 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
             </div>
             <div className="mt-6 text-2xl tabular-nums text-zinc-400">
               <span className="text-emerald-400">{lastResult.votes_for}</span>
-              {' – '}<span className="text-red-400">{lastResult.votes_against}</span>
-              {' – '}<span className="text-zinc-400">{lastResult.votes_abstain}</span>
+              {' - '}<span className="text-red-400">{lastResult.votes_against}</span>
+              {' - '}<span className="text-zinc-400">{lastResult.votes_abstain}</span>
             </div>
           </div>
         ) : (

@@ -1,6 +1,6 @@
 // RadaStudentów24 service worker — push notifications + offline fallback page.
 // Deliberately caches NOTHING else: session/vote data must always be live.
-const OFFLINE_CACHE = 'rs24-offline-v1';
+const OFFLINE_CACHE = 'rs24-offline-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {

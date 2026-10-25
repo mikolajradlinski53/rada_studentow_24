@@ -147,8 +147,8 @@ function Login() {
               </button>
               <p className="pt-1 text-center text-[13px] leading-relaxed text-zinc-500">
                 {EMAIL_CODE
-                  ? 'Dostaniesz maila z 6-cyfrowym kodem (i linkiem) — bez hasła.'
-                  : 'Dostaniesz maila z jednorazowym linkiem — bez hasła.'}
+                  ? 'Dostaniesz maila z 6-cyfrowym kodem (i linkiem), bez hasła.'
+                  : 'Dostaniesz maila z jednorazowym linkiem, bez hasła.'}
               </p>
             </form>
           )}
@@ -164,7 +164,7 @@ function Login() {
               </div>
               <p className="text-[13px] leading-relaxed text-zinc-500">
                 Otwórz maila na tym urządzeniu i kliknij link. Na iPhonie z aplikacją na ekranie
-                głównym link otworzy się w Safari — wygodniej zalogować się tam hasłem.
+                głównym link otworzy się w Safari, wygodniej zalogować się tam hasłem.
               </p>
               <div className="flex items-center justify-between">
                 <button onClick={() => { setCodeSent(false); setError(null); }}
@@ -193,7 +193,7 @@ function Login() {
                 className={clsx(field, 'h-14 text-center font-mono text-2xl tracking-[0.5em] tabular-nums')} />
               {error && <p role="alert" className="text-center text-sm text-red-400">{error}</p>}
               <p className="text-center text-[13px] leading-relaxed text-zinc-500">
-                {busy ? 'Sprawdzanie…' : 'Możesz też kliknąć link w mailu — na iPhonie z zainstalowaną aplikacją lepiej wpisać kod.'}
+                {busy ? 'Sprawdzanie…' : 'Możesz też kliknąć link w mailu, na iPhonie z zainstalowaną aplikacją lepiej wpisać kod.'}
               </p>
               <div className="flex items-center justify-between">
                 <button onClick={() => { setCodeSent(false); setCode(''); setError(null); }}

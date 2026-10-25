@@ -108,7 +108,7 @@ export function Discussion({
         <h2 className="text-sm font-medium text-zinc-400">Dyskusja · głos i wnioski</h2>
         {speaker && (
           <span className="text-xs text-indigo-300">
-            Głos ma: <span className="font-medium">{speaker.mandate?.profile?.full_name ?? '—'}</span>
+            Głos ma: <span className="font-medium">{speaker.mandate?.profile?.full_name ?? '-'}</span>
           </span>
         )}
       </div>
@@ -176,7 +176,7 @@ export function Discussion({
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span className="w-4 shrink-0 text-xs text-zinc-600 tabular-nums">{idx + 1}</span>
                   <div className="min-w-0">
-                    <div className="truncate text-sm text-zinc-200">{r.mandate?.profile?.full_name ?? '—'}</div>
+                    <div className="truncate text-sm text-zinc-200">{r.mandate?.profile?.full_name ?? '-'}</div>
                     <div className={clsx('text-xs', isFormal ? 'text-amber-400' : isSpeaking ? 'text-indigo-300' : 'text-zinc-500')}>
                       {isSpeaking ? 'Głos ma' : reqLabel(r)}{r.note ? ` · ${r.note}` : ''}
                     </div>

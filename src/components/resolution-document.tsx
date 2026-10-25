@@ -18,7 +18,7 @@ export function ResolutionDocument({
     : { inCase: 'w sprawie', signer: 'Przewodniczący', dateWord: 'z dnia' };
 
   return (
-    <article className="mx-auto max-w-3xl rounded-lg bg-white p-10 text-zinc-900 shadow-xl print:rounded-none print:p-0 print:shadow-none">
+    <article className="theme-fixed mx-auto max-w-3xl rounded-lg bg-white p-10 text-zinc-900 shadow-xl print:rounded-none print:p-0 print:shadow-none">
       <header className="text-center">
         <div className="text-sm uppercase tracking-wide text-zinc-600">{orgName}</div>
         <h1 className="mt-3 text-xl font-bold">{signature}</h1>
