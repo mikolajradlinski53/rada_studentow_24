@@ -69,7 +69,11 @@ protokołów, formatowanie uchwał, tłumaczenie PL→EN) używa **self-hostowan
 
 ### 2. Baza — migracje
 
-W Supabase **SQL Editor** uruchom po kolei (idempotentne):
+Przez **Supabase CLI**: `npm run db:login`, `npm run db:link`, potem `npm run db:push`
+— szczegóły (w tym jednorazowy baseline istniejącej bazy) w
+[docs/supabase-cli.md](docs/supabase-cli.md).
+
+Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 
 ```
 001_initial_schema.sql   — tabele, RLS, funkcje (kworum, tally, cast_ballot)
