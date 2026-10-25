@@ -2,6 +2,30 @@
 
 :root {
   --font-sans: var(--font-inter), system-ui, sans-serif;
+  /* Motion tokens — strong ease-out for UI, iOS sheet curve for drawers. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Pressable: instant, subtle press feedback (the app is tapped, not hovered). */
+@utility press {
+  transition: transform 160ms var(--ease-out), background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  cursor: pointer;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-property: opacity, background-color, border-color, color !important;
+  }
 }
 
 body {

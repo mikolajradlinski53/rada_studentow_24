@@ -30,7 +30,7 @@ export default async function ResolutionsPage({ params }: { params: Promise<{ or
     <div>
       <div className="mb-8 flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Rejestr uchwał</h1>
+          <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Rejestr uchwał</h1>
           <p className="mt-1 text-sm text-zinc-500">
             Wszystkie uchwały organu
           </p>

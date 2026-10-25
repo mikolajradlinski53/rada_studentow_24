@@ -53,7 +53,17 @@ WHISPER_API_URL=https://whisper.twoj-serwer.pl/v1/audio/transcriptions  # opcjon
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # opcjonalnie — powiadomienia push
 VAPID_PRIVATE_KEY=...              # (npx web-push generate-vapid-keys)
 VAPID_SUBJECT=mailto:admin@twoja-domena.pl
+SUPABASE_SERVICE_ROLE_KEY=eyJ...   # hasła tymczasowe dla radnych (TYLKO serwer)
 ```
+
+**Dostęp radnych.** Admin dodaje osoby w *Administracja → Dostęp do platformy*
+(pojedynczo albo wklejając listę z Excela) i nadaje im **hasło tymczasowe** —
+widoczne raz, do wysłania przyciskiem „Wyślij radnemu”. Przy pierwszym logowaniu
+radny ustawia własne hasło. Hasła wymagają `SUPABASE_SERVICE_ROLE_KEY` (Supabase →
+Settings → API → `service_role`; nigdy z prefiksem `NEXT_PUBLIC_`). Zapasowo działa
+logowanie **6-cyfrowym kodem z maila** — w Supabase → Authentication → Email
+Templates → *Magic Link* dodaj do treści `{{ .Token }}`, inaczej mail będzie
+zawierał tylko link (na iPhonie link otwiera Safari zamiast zainstalowanej aplikacji).
 
 Klucze VAPID generuje się **raz** i nie zmienia — nowa para unieważnia wszystkie
 zapisane subskrypcje (każdy musiałby włączyć powiadomienia od nowa). Na iOS
@@ -90,6 +100,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 012_user_names.sql        — imię i nazwisko z zaproszenia
 013_resolution_bilingual.sql — uchwały PL/EN
 014_push_notifications.sql — subskrypcje push (PWA) + broadcast RPC
+015_accept_invitations.sql — zaproszenia działają też dla istniejących kont
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

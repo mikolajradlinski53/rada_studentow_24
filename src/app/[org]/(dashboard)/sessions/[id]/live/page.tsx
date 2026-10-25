@@ -12,6 +12,8 @@ import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/
 import { Transmission } from '@/components/session/transmission';
 import { MotionVoteCard } from '@/components/session/motion-vote';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Check } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
@@ -103,7 +105,16 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   // === RENDER ===
   if (loading) {
-    return <div className="flex h-96 items-center justify-center text-zinc-500 text-sm">Ładowanie posiedzenia...</div>;
+    return (
+      <div role="status" aria-label="Ładowanie posiedzenia" className="space-y-6">
+        <Skeleton className="h-7 w-2/3" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <div className="space-y-1.5">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+        </div>
+      </div>
+    );
   }
   if (!session) return null;
 
@@ -152,7 +163,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
             <span className="text-sm text-zinc-400">Obecność</span>
             <span className={clsx('rounded-full px-2.5 py-0.5 text-xs font-medium',
               quorum?.has_quorum ? 'bg-emerald-900/50 text-emerald-300' : 'bg-red-900/50 text-red-300')}>
-              {quorum?.has_quorum ? 'Kworum ✓' : 'Brak kworum'}
+              {quorum?.has_quorum ? 'Kworum' : 'Brak kworum'}
             </span>
           </div>
           <span className="text-sm tabular-nums text-zinc-400">
@@ -176,7 +187,11 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         {myMandate && !isCheckedIn && session.attendance_mode === 'chair' && (
           <div className="mt-2 text-xs text-zinc-500">Obecność potwierdza prowadzący.</div>
         )}
-        {isCheckedIn && <div className="mt-2 text-xs text-emerald-400">✓ Jesteś obecny/a</div>}
+        {isCheckedIn && (
+          <div className="mt-2.5 flex items-center gap-1.5 text-[13px] text-emerald-400">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} /> Jesteś obecny/a
+          </div>
+        )}
       </div>
 
       {/* Active vote — right under attendance, the one thing a member is here for */}

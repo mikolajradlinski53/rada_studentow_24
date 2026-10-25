@@ -47,7 +47,7 @@ export default async function AuditPage({
     <div>
       <div className="mb-6 flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Logi audytowe</h1>
+          <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Logi audytowe</h1>
           <p className="mt-1 text-sm text-zinc-500">
             Historia działań w systemie — Komisja Rewizyjna
           </p>

@@ -17,11 +17,11 @@ i przy `db push` próbowałby je odpalić drugi raz. Oznacz je jako zastosowane:
 
 ```bash
 npm run db:baseline     # migration repair --status applied 001 … 013
-npm run db:status       # kolumna "Remote" powinna mieć 001–013, 014 tylko "Local"
+npm run db:status       # "Remote" powinno mieć 001–013; 014+ tylko "Local" → db:push je wgra
 ```
 
 Jeśli 014 (`push_notifications`) była już uruchomiona ręcznie — nic nie szkodzi,
-jest idempotentna; `db:push` po prostu ją potwierdzi.
+jest idempotentna; `db:push` po prostu ją potwierdzi. To samo dotyczy 015.
 
 ## Na co dzień
 

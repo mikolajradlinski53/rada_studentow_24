@@ -13,32 +13,34 @@ export default async function AdminPage({ params }: { params: Promise<{ org: str
 
   const { data: members } = await supabase
     .from('mandates')
-    .select('id, role, is_active, profile:profiles(full_name, email)')
+    .select('id, role, is_active, profile:profiles(id, full_name, email)')
     .eq('term_id', ctx.termId)
     .eq('is_active', true)
     .order('role');
 
   const { data: pending } = await supabase
     .from('invitations')
-    .select('id, email, role')
+    .select('id, email, role, full_name')
     .eq('term_id', ctx.termId)
     .is('accepted_at', null)
     .order('created_at', { ascending: false });
 
   return (
     <div>
+      <AdminClient
+        org={org}
+        orgName={ctx.org.name}
+        myMandateId={ctx.mandateId}
+        members={(members as unknown as Member[]) ?? []}
+        pending={(pending as unknown as Pending[]) ?? []}
+        passwordsEnabled={!!process.env.SUPABASE_SERVICE_ROLE_KEY}
+      />
       <BrandingSection
         slug={org}
         name={ctx.org.name}
         accentColor={ctx.org.accent_color}
         logoUrl={ctx.org.logo_url}
         enabledModules={ctx.org.enabled_modules}
-      />
-      <AdminClient
-        org={org}
-        myMandateId={ctx.mandateId}
-        members={(members as unknown as Member[]) ?? []}
-        pending={(pending as unknown as Pending[]) ?? []}
       />
     </div>
   );

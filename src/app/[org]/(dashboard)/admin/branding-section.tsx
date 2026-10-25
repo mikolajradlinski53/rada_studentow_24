@@ -41,7 +41,7 @@ export function BrandingSection({
   };
 
   return (
-    <div className="mb-10 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="mt-12 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5">
       <h2 className="mb-3 text-sm font-medium text-zinc-300">Wygląd i moduły organizacji</h2>
 
       <div className="grid gap-4 sm:grid-cols-2">

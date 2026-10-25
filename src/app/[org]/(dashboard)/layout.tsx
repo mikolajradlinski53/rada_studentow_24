@@ -15,6 +15,8 @@ export default async function DashboardLayout({
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+  // Signed in with an admin-issued temporary password → choose your own first.
+  if (user.user_metadata?.must_change_password) redirect('/ustaw-haslo');
 
   const ctx = await getOrgContext(slug);
   if (!ctx) notFound(); // org missing OR no active mandate here → isolation gate
