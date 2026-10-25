@@ -1,6 +1,10 @@
 // Server components render on Vercel in UTC — always format in Polish local time,
 // otherwise sitting times show 1–2 h off.
+import { TZDate, tz } from '@date-fns/tz';
+
 const TZ = 'Europe/Warsaw';
+/** date-fns `in` option: format(date, pattern, { locale: pl, in: PL_TZ }). */
+export const PL_TZ = tz(TZ);
 
 const cache = new Map<string, Intl.DateTimeFormat>();
 function fmt(opts: Intl.DateTimeFormatOptions) {
@@ -24,4 +28,11 @@ export function plRelativeDay(d: Date, now = new Date()) {
   if (key(d) === key(now)) return 'Dziś';
   if (key(d) === key(new Date(now.getTime() + 86_400_000))) return 'Jutro';
   return null;
+}
+
+/** "2026-10-14" → ISO instant of that day's start/end in Polish time (for DB range filters). */
+export function plDayBoundsISO(day: string, edge: 'start' | 'end') {
+  const [y, m, d] = day.split('-').map(Number);
+  const t = edge === 'start' ? TZDate.tz(TZ, y, m - 1, d, 0, 0, 0) : TZDate.tz(TZ, y, m - 1, d, 23, 59, 59);
+  return new Date(t.getTime()).toISOString();
 }

@@ -60,21 +60,21 @@ export function RollCall({
   };
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-medium text-zinc-300">Lista obecności (prowadzący)</h2>
+        <h2 className="text-[15px] font-semibold text-zinc-100">Lista obecności</h2>
         <div className="flex items-center gap-2">
           <button onClick={exportCsv}
-            className="rounded-md border border-zinc-700 px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
+            className="press h-9 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
             Eksport CSV
           </button>
-          <div className="flex items-center gap-1 rounded-md border border-zinc-700 p-0.5 text-xs">
+          <div className="flex items-center gap-1 rounded-xl border border-zinc-700 p-0.5 text-xs">
             <button onClick={() => setMode('chair')}
-              className={clsx('rounded px-2 py-1 transition-colors', mode === 'chair' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
+              className={clsx('h-8 rounded-lg px-3 text-[13px] transition-colors', mode === 'chair' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
               Prowadzący
             </button>
             <button onClick={() => setMode('self')}
-              className={clsx('rounded px-2 py-1 transition-colors', mode === 'self' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
+              className={clsx('h-8 rounded-lg px-3 text-[13px] transition-colors', mode === 'self' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
               Samodzielnie
             </button>
           </div>
@@ -85,12 +85,12 @@ export function RollCall({
         {sorted.map((m) => {
           const current = statusBy.get(m.id) ?? 'absent';
           return (
-            <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-800/80 bg-zinc-900/40 px-3 py-2">
-              <span className="min-w-0 truncate text-sm text-zinc-200">{m.profile?.full_name ?? '-'}</span>
+            <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3 py-2.5">
+              <span className="min-w-0 truncate text-[15px] text-zinc-100">{m.profile?.full_name ?? '-'}</span>
               <div className="flex flex-wrap gap-1">
                 {OPTIONS.map((o) => (
                   <button key={o.value} onClick={() => set(m.id, o.value)}
-                    className={clsx('rounded px-2 py-1 text-xs transition-colors',
+                    className={clsx('press h-9 rounded-xl px-3 text-[13px] font-medium transition-colors',
                       current === o.value ? o.tone : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200')}>
                     {o.label}
                   </button>
@@ -102,7 +102,7 @@ export function RollCall({
         {!sorted.length && <p className="text-xs text-zinc-600">Brak mandatów w kadencji.</p>}
       </div>
       {mode === 'self' && (
-        <p className="mt-3 text-xs text-zinc-600">Tryb „Samodzielnie": radni mogą sami potwierdzać obecność.</p>
+        <p className="mt-3 text-[13px] text-zinc-500">Tryb „Samodzielnie”: radni mogą sami potwierdzać obecność.</p>
       )}
     </div>
   );

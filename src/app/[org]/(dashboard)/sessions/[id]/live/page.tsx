@@ -139,14 +139,14 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           <Link
             href={`/${org}/projector/${sessionId}`}
             target="_blank"
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+            className="rounded-xl border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
           >
             <span className="hidden sm:inline">Widok rzutnikowy</span><span className="sm:hidden">Rzutnik</span> ↗
           </Link>
           {isChair && session.status === 'in_progress' && (
             <button
               onClick={closeSession}
-              className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
+              className="rounded-xl border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
             >
               <span className="hidden sm:inline">Zamknij posiedzenie</span><span className="sm:hidden">Zamknij</span>
             </button>
@@ -255,7 +255,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         <div className="space-y-1.5">
           {agendaItems.map((item, idx) => (
             <div key={item.id}
-              className={clsx('rounded-lg border px-4 py-3',
+              className={clsx('rounded-2xl border px-4 py-3',
                 item.status === 'in_progress' ? 'border-indigo-600 bg-indigo-950/20'
                   : item.status === 'completed' ? 'border-zinc-800 bg-zinc-900/30 opacity-60'
                   : 'border-zinc-800 bg-zinc-900/50')}>
@@ -267,9 +267,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'resolution' && (
                   <div className="flex gap-1.5 pl-7 sm:pl-0">
                     <button onClick={() => openVote(item, 'open')}
-                      className="rounded-md px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors active:scale-95">Głosuj jawnie</button>
+                      className="rounded-xl px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors active:scale-95">Głosuj jawnie</button>
                     <button onClick={() => openVote(item, 'secret')}
-                      className="rounded-md px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors active:scale-95">Głosuj tajnie</button>
+                      className="rounded-xl px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors active:scale-95">Głosuj tajnie</button>
                   </div>
                 )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (
@@ -330,7 +330,7 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
       <h2 className="text-sm font-medium text-zinc-400 mb-3">Zakończone głosowania</h2>
       <div className="space-y-1.5">
         {votes.map((v) => v.vote_kind === 'election' ? (
-          <div key={v.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+          <div key={v.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-zinc-300">{v.title}</div>
               <span className="rounded-full bg-amber-900/50 px-2 py-0.5 text-xs font-medium text-amber-300">Wybory</span>
@@ -338,7 +338,7 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
             <ElectionResultRow vote={v} />
           </div>
         ) : (
-          <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+          <div key={v.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
             <div className="flex shrink-0 items-center gap-3">
               <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}-{v.votes_against}-{v.votes_abstain}</span>

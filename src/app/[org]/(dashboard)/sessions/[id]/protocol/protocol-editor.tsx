@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { clsx } from 'clsx';
+import { Check, ChevronLeft, Mic, RefreshCw, ScrollText, Sparkles } from 'lucide-react';
 import type { ProtocolStatus } from '@/types/database';
 import { runAiStream } from '@/lib/ai';
 import { generateProtocol, saveProtocol } from './actions';
@@ -81,82 +83,87 @@ export function ProtocolEditor({
 
   return (
     <div>
+      <Link href={`/${org}/sessions/${sessionId}`}
+        className="press -ml-2 mb-3 inline-flex h-9 max-w-full items-center gap-0.5 rounded-xl pl-1 pr-3 text-[15px] text-indigo-300 hover:bg-zinc-800/40">
+        <ChevronLeft className="h-5 w-5 shrink-0" /> <span className="truncate">{sessionTitle}</span>
+      </Link>
+
       <div className="mb-6">
-        <Link href={`/${org}/sessions/${sessionId}`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-          ← {sessionTitle}
-        </Link>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <h1 className="text-xl font-semibold text-zinc-100">Protokół</h1>
-          {canEdit && (
-            <div className="flex items-center gap-2">
-              {hasProtocol && (
-                <button onClick={polishWithAi} disabled={isPending || aiBusy}
-                  className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
-                  {aiBusy ? 'AI pracuje…' : 'Ulepsz (AI)'}
-                </button>
-              )}
-              <button onClick={generate} disabled={isPending}
-                className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-50 transition-colors">
-                {hasProtocol ? 'Regeneruj szkielet' : 'Generuj szkielet'}
-              </button>
-            </div>
-          )}
-        </div>
+        <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Protokół</h1>
         {generatedAt && (
-          <p className="mt-1 text-xs text-zinc-600">
-            Szkielet wygenerowany {format(new Date(generatedAt), "d MMMM yyyy, HH:mm", { locale: pl })}
+          <p className="mt-1 text-[13px] text-zinc-500">
+            Szkielet wygenerowany {format(new Date(generatedAt), "d MMMM yyyy, 'godz.' HH:mm", { locale: pl })}
           </p>
+        )}
+        {canEdit && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={generate} disabled={isPending}
+              className="press flex h-10 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[13px] font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50">
+              <RefreshCw className="h-4 w-4" /> {hasProtocol ? 'Wygeneruj ponownie' : 'Generuj szkielet'}
+            </button>
+            {hasProtocol && (
+              <button onClick={polishWithAi} disabled={isPending || aiBusy}
+                className="press flex h-10 items-center gap-1.5 rounded-xl border border-indigo-800/70 bg-indigo-950/30 px-3.5 text-[13px] font-medium text-indigo-300 hover:bg-indigo-950/60 disabled:opacity-50">
+                <Sparkles className="h-4 w-4" /> {aiBusy ? 'AI pracuje…' : 'Ulepsz (AI)'}
+              </button>
+            )}
+            {hasProtocol && (
+              <label className={clsx('press flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[13px] font-medium text-zinc-200 hover:border-zinc-500',
+                transcribing && 'pointer-events-none opacity-50')}>
+                <Mic className="h-4 w-4" /> {transcribing ? 'Transkrybuję…' : 'Wgraj nagranie'}
+                <input type="file" accept="audio/*" className="hidden" disabled={transcribing}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) transcribe(f); e.target.value = ''; }} />
+              </label>
+            )}
+          </div>
+        )}
+        {canEdit && hasProtocol && (
+          <p className="mt-2 px-1 text-[12px] text-zinc-500">Nagranie do 24 MB (dłuższe podziel). Transkrypcja dopisze się na końcu.</p>
         )}
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-xl border border-red-900/60 bg-red-950/30 px-3.5 py-2.5 text-sm text-red-300">{error}</p>}
+      {transcribeMsg && <p className="mb-4 rounded-xl bg-zinc-900/60 px-3.5 py-2.5 text-[13px] text-zinc-300 ring-1 ring-zinc-800">{transcribeMsg}</p>}
 
       {!hasProtocol ? (
-        <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-900/40 p-10 text-center">
-          <p className="text-sm text-zinc-400">Protokół nie został jeszcze wygenerowany.</p>
-          {canEdit ? (
-            <p className="mt-1 text-xs text-zinc-600">Kliknij „Generuj szkielet", aby utworzyć protokół z danych posiedzenia.</p>
-          ) : (
-            <p className="mt-1 text-xs text-zinc-600">Poczekaj, aż prowadzący wygeneruje protokół.</p>
-          )}
+        <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-12 text-center">
+          <ScrollText className="mx-auto h-8 w-8 text-zinc-600" />
+          <p className="mt-3 text-[15px] text-zinc-300">Protokołu jeszcze nie ma</p>
+          <p className="mt-1 text-[13px] text-zinc-500">
+            {canEdit
+              ? 'Wygeneruj szkielet: obecność, kworum, porządek obrad i wyniki głosowań uzupełnią się same.'
+              : 'Pojawi się tutaj, gdy prowadzący go przygotuje.'}
+          </p>
         </div>
       ) : canEdit ? (
-        <div className="space-y-3">
-          {/* Transcription (Whisper) — upload a recording, text is appended */}
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
-            <div className="min-w-0">
-              <div className="text-sm text-zinc-300">Transkrypcja nagrania</div>
-              <div className="text-xs text-zinc-600">Wgraj audio (≤ 24 MB, dłuższe podziel na fragmenty), tekst dopisze się na końcu.</div>
-            </div>
-            <label className="ml-auto shrink-0 cursor-pointer rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
-              {transcribing ? 'Transkrybuję…' : 'Wgraj nagranie'}
-              <input type="file" accept="audio/*" className="hidden" disabled={transcribing}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) transcribe(f); e.target.value = ''; }} />
-            </label>
-          </div>
-          {transcribeMsg && <p className="text-xs text-zinc-400">{transcribeMsg}</p>}
-
+        <div className="space-y-4">
           <textarea
             value={body}
             onChange={(e) => { setBody(e.target.value); setSaved(false); }}
             spellCheck={false}
-            className="h-[60vh] w-full rounded-lg border border-zinc-800 bg-zinc-900/60 p-4 font-mono text-sm leading-relaxed text-zinc-200 focus:border-indigo-500 focus:outline-none"
+            aria-label="Treść protokołu"
+            className="h-[60vh] w-full rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 font-mono text-[14px] leading-relaxed text-zinc-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <select value={status} onChange={(e) => setStatus(e.target.value as ProtocolStatus)}
-              className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">
-              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-            </select>
+          <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <div className="px-1 text-[13px] font-medium text-zinc-400">Status</div>
+            <div role="radiogroup" aria-label="Status protokołu" className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-950/60 p-1 ring-1 ring-zinc-800 sm:grid-cols-4">
+              {STATUSES.map((s) => (
+                <button key={s} type="button" role="radio" aria-checked={status === s} onClick={() => { setStatus(s); setSaved(false); }}
+                  className={clsx('h-10 rounded-lg text-[14px] font-medium transition-colors',
+                    status === s ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
+                  {STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
             <button disabled={isPending}
               onClick={() => run(() => saveProtocol(org, sessionId, body, status), () => setSaved(true))}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
-              {isPending ? 'Zapisywanie…' : 'Zapisz'}
+              className="press flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+              {saved ? <><Check className="h-4 w-4" /> Zapisano</> : isPending ? 'Zapisywanie…' : 'Zapisz protokół'}
             </button>
-            {saved && <span className="text-xs text-emerald-400">Zapisano</span>}
           </div>
         </div>
       ) : (
-        <pre className="whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-900/60 p-4 font-mono text-sm leading-relaxed text-zinc-300">
+        <pre className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 font-sans text-[15px] leading-relaxed text-zinc-300">
           {body}
         </pre>
       )}

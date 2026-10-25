@@ -90,7 +90,7 @@ export function AppShell({ children, accent, ...props }: SidebarProps & { childr
           <div className="flex min-w-0 items-center gap-2.5">
             {props.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={props.logoUrl} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />
+              <img src={props.logoUrl} alt="" className="h-7 w-7 shrink-0 rounded-xl object-contain" />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/icons/icon-192.png" alt="" className="h-7 w-7 shrink-0 rounded-lg" />
@@ -201,7 +201,7 @@ function SidebarInner({
 
       {liveHref && !pathname.startsWith(liveHref) && (
         <Link href={liveHref}
-          className="mx-2 mt-3 flex items-center gap-2 rounded-md border border-emerald-800/70 bg-emerald-950/40 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-950/70">
+          className="mx-2 mt-3 flex items-center gap-2 rounded-xl border border-emerald-800/70 bg-emerald-950/40 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-950/70">
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
           Trwa posiedzenie, wejdź
         </Link>
@@ -218,7 +218,7 @@ function SidebarInner({
               href={href}
               style={isActive ? { borderColor: 'var(--accent, #6366f1)' } : undefined}
               className={clsx(
-                'flex items-center gap-2.5 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors',
+                'flex items-center gap-2.5 rounded-xl border-l-2 px-3 py-2.5 text-sm transition-colors',
                 isActive
                   ? 'border-l-2 bg-zinc-800 text-zinc-100'
                   : 'border-transparent text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
@@ -257,7 +257,7 @@ export function OrgSwitcher({ orgSlug, orgs, className }: { orgSlug: string; org
       value={orgSlug}
       onChange={(e) => router.push(`/${e.target.value}/sessions`)}
       className={clsx(
-        'mt-1.5 w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 focus:border-indigo-500 focus:outline-none',
+        'mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 focus:border-indigo-500 focus:outline-none',
         className
       )}
       aria-label="Wybierz organizację"

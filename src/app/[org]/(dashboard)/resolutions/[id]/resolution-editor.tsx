@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { clsx } from 'clsx';
+import { Check, ChevronDown, ChevronLeft, FileDown, Languages, Sparkles } from 'lucide-react';
 import type { ResolutionStatus } from '@/types/database';
 import { runAi, runAiStream } from '@/lib/ai';
 import { saveResolution } from '../actions';
@@ -91,105 +93,113 @@ export function ResolutionEditor({
     });
   };
 
+  const input = 'h-12 w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 text-[16px] text-zinc-100 placeholder-zinc-600 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30';
+  const area = 'w-full rounded-xl border border-zinc-700 bg-zinc-800/80 p-4 font-mono text-[14px] leading-relaxed text-zinc-100 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30';
+  const label = 'mb-2 block px-1 text-[13px] font-medium text-zinc-400';
+
   return (
     <div>
-      <div className="mb-6">
-        <Link href={`/${org}/resolutions`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-          ← Rejestr uchwał
-        </Link>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <h1 className="text-xl font-semibold text-zinc-100">{signature}</h1>
-          <Link href={`/${org}/resolutions/${id}/print`} target="_blank"
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
-            Wersja do druku / PDF ↗
-          </Link>
+      <Link href={`/${org}/resolutions`}
+        className="press -ml-2 mb-3 inline-flex h-9 items-center gap-0.5 rounded-xl pl-1 pr-3 text-[15px] text-indigo-300 hover:bg-zinc-800/40">
+        <ChevronLeft className="h-5 w-5" /> Uchwały
+      </Link>
+
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-zinc-50">{signature}</h1>
+          <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">
+            Z posiedzenia: {sessionTitle}
+            {signedAt && signerName && <><br />Podpisał(a): {signerName}, {format(new Date(signedAt), 'd MMMM yyyy', { locale: pl })}</>}
+          </p>
         </div>
-        <p className="mt-1 text-xs text-zinc-600">
-          z posiedzenia: {sessionTitle}
-          {signedAt && signerName && ` · podpisał(a): ${signerName}, ${format(new Date(signedAt), 'd MMMM yyyy', { locale: pl })}`}
-        </p>
+        <Link href={`/${org}/resolutions/${id}/print`} target="_blank"
+          className="press flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-sm font-medium text-zinc-200 hover:border-zinc-500">
+          <FileDown className="h-4 w-4" /> PDF
+        </Link>
       </div>
 
-      {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-xl border border-red-900/60 bg-red-950/30 px-3.5 py-2.5 text-sm text-red-300">{error}</p>}
 
       {!canEdit ? (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium text-zinc-100">{title}</h2>
-          {legalBasis && <p className="text-sm italic text-zinc-400">{legalBasis}</p>}
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-300">{body}</pre>
-        </div>
+        <article className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <h2 className="text-[17px] font-semibold text-zinc-100">{title}</h2>
+          {legalBasis && <p className="mt-2 text-[14px] italic text-zinc-400">{legalBasis}</p>}
+          <pre className="mt-4 whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-zinc-300">{body}</pre>
+        </article>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="mb-1 block text-xs text-zinc-400">Tytuł (w sprawie…)</label>
-            <input value={title} onChange={(e) => { setTitle(e.target.value); setSaved(false); }}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+            <label htmlFor="res-title" className={label}>Tytuł (w sprawie…)</label>
+            <input id="res-title" value={title} onChange={(e) => { setTitle(e.target.value); setSaved(false); }} className={input} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-400">Podstawa prawna</label>
-            <input value={legalBasis} onChange={(e) => { setLegalBasis(e.target.value); setSaved(false); }}
-              placeholder="Na podstawie § … Regulaminu …"
-              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+            <label htmlFor="res-basis" className={label}>Podstawa prawna</label>
+            <input id="res-basis" value={legalBasis} onChange={(e) => { setLegalBasis(e.target.value); setSaved(false); }}
+              placeholder="Na podstawie § … Regulaminu …" className={input} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-zinc-400">Treść</label>
-            <textarea value={body} onChange={(e) => { setBody(e.target.value); setSaved(false); }} spellCheck={false}
-              className="h-[40vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+            <label htmlFor="res-body" className={label}>Treść</label>
+            <textarea id="res-body" value={body} onChange={(e) => { setBody(e.target.value); setSaved(false); }} spellCheck={false}
+              className={clsx(area, 'h-[40vh]')} />
           </div>
 
           {/* AI assistant */}
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={formatWithAi} disabled={ai !== null}
-              className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
-              {ai === 'format' ? 'AI pracuje…' : 'Sformatuj treść (AI)'}
+              className="press flex h-10 items-center gap-1.5 rounded-xl border border-indigo-800/70 bg-indigo-950/30 px-3.5 text-[13px] font-medium text-indigo-300 hover:bg-indigo-950/60 disabled:opacity-50">
+              <Sparkles className="h-4 w-4" /> {ai === 'format' ? 'AI pracuje…' : 'Sformatuj (AI)'}
             </button>
             <button type="button" onClick={translateWithAi} disabled={ai !== null}
-              className="rounded-md border border-indigo-800 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-950/40 disabled:opacity-50 transition-colors">
-              {ai === 'translate' ? 'AI tłumaczy…' : 'Przetłumacz na EN (AI)'}
+              className="press flex h-10 items-center gap-1.5 rounded-xl border border-indigo-800/70 bg-indigo-950/30 px-3.5 text-[13px] font-medium text-indigo-300 hover:bg-indigo-950/60 disabled:opacity-50">
+              <Languages className="h-4 w-4" /> {ai === 'translate' ? 'AI tłumaczy…' : 'Przetłumacz na EN'}
             </button>
-            {aiMsg && <span className="text-xs text-zinc-400">{aiMsg}</span>}
+            {aiMsg && <span className="text-[13px] text-zinc-400">{aiMsg}</span>}
           </div>
 
           {/* English version (optional) */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
-            <button type="button" onClick={() => setShowEn((v) => !v)}
-              className="flex w-full items-center justify-between text-sm text-zinc-300">
-              <span>Wersja angielska (EN), opcjonalna</span>
-              <span className="text-xs text-zinc-500">{showEn ? 'ukryj ▲' : 'pokaż ▼'}</span>
+          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
+            <button type="button" onClick={() => setShowEn((v) => !v)} aria-expanded={showEn}
+              className="press flex h-12 w-full items-center justify-between px-4 text-[15px] text-zinc-200">
+              <span>Wersja angielska <span className="text-zinc-500">(opcjonalna)</span></span>
+              <ChevronDown className={clsx('h-4 w-4 text-zinc-500 transition-transform duration-200', showEn && 'rotate-180')} />
             </button>
             {showEn && (
-              <div className="mt-3 space-y-3">
+              <div className="space-y-4 border-t border-zinc-800/80 p-4">
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-400">Title (on…)</label>
-                  <input value={titleEn} onChange={(e) => { setTitleEn(e.target.value); setSaved(false); }}
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+                  <label htmlFor="res-title-en" className={label}>Title (on…)</label>
+                  <input id="res-title-en" value={titleEn} onChange={(e) => { setTitleEn(e.target.value); setSaved(false); }} className={input} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-400">Legal basis</label>
-                  <input value={legalBasisEn} onChange={(e) => { setLegalBasisEn(e.target.value); setSaved(false); }}
-                    placeholder="Pursuant to § … of the Regulations …"
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+                  <label htmlFor="res-basis-en" className={label}>Legal basis</label>
+                  <input id="res-basis-en" value={legalBasisEn} onChange={(e) => { setLegalBasisEn(e.target.value); setSaved(false); }}
+                    placeholder="Pursuant to § … of the Regulations …" className={input} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-zinc-400">Body</label>
-                  <textarea value={bodyEn} onChange={(e) => { setBodyEn(e.target.value); setSaved(false); }} spellCheck={false}
-                    className="h-[30vh] w-full rounded-md border border-zinc-700 bg-zinc-800 p-3 font-mono text-sm leading-relaxed text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+                  <label htmlFor="res-body-en" className={label}>Body</label>
+                  <textarea id="res-body-en" value={bodyEn} onChange={(e) => { setBodyEn(e.target.value); setSaved(false); }} spellCheck={false}
+                    className={clsx(area, 'h-[30vh]')} />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select value={status} onChange={(e) => setStatus(e.target.value as ResolutionStatus)}
-              className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">
-              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-            </select>
+          {/* Status + save */}
+          <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <div className={label + ' mb-0'}>Status</div>
+            <div role="radiogroup" aria-label="Status uchwały" className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-950/60 p-1 ring-1 ring-zinc-800 sm:grid-cols-4">
+              {STATUSES.map((s) => (
+                <button key={s} type="button" role="radio" aria-checked={status === s} onClick={() => { setStatus(s); setSaved(false); }}
+                  className={clsx('h-10 rounded-lg text-[14px] font-medium transition-colors',
+                    status === s ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
+                  {STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
+            <p className="px-1 text-[13px] text-zinc-500">Status „Uchwalona” lub „Opublikowana” podpisuje uchwałę Twoim imieniem.</p>
             <button disabled={isPending} onClick={save}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
-              {isPending ? 'Zapisywanie…' : 'Zapisz'}
+              className="press flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+              {saved ? <><Check className="h-4 w-4" /> Zapisano</> : isPending ? 'Zapisywanie…' : 'Zapisz uchwałę'}
             </button>
-            {saved && <span className="text-xs text-emerald-400">Zapisano</span>}
-            <span className="text-xs text-zinc-600">Ustawienie „Uchwalona"/„Opublikowana" podpisuje uchwałę.</span>
           </div>
         </div>
       )}

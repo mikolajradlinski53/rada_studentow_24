@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { toCsv, downloadCsv } from '@/lib/csv';
+import { plDayBoundsISO } from '@/lib/dates';
+import { Download } from 'lucide-react';
 
 type Row = { created_at: string; action: string; metadata: Record<string, unknown> | null; actor: { full_name?: string } | null };
 
@@ -26,8 +28,8 @@ export function ExportCsvButton({
       .select('created_at, action, metadata, actor:profiles(full_name)')
       .eq('org_id', orgId);
     if (action) q = q.eq('action', action);
-    if (from) q = q.gte('created_at', `${from}T00:00:00`);
-    if (to) q = q.lte('created_at', `${to}T23:59:59`);
+    if (from) q = q.gte('created_at', plDayBoundsISO(from, 'start'));
+    if (to) q = q.lte('created_at', plDayBoundsISO(to, 'end'));
 
     const { data } = await q.order('created_at', { ascending: false }).limit(5000);
 
@@ -51,7 +53,8 @@ export function ExportCsvButton({
 
   return (
     <button onClick={run} disabled={busy}
-      className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-50 transition-colors">
+      className="press flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-sm font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50">
+      <Download className="h-4 w-4" />
       {busy ? 'Eksport…' : 'Eksport CSV'}
     </button>
   );

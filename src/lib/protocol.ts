@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { PL_TZ } from '@/lib/dates';
 import { pl } from 'date-fns/locale';
 import type { AttendanceStatus } from '@/types/database';
 
@@ -31,7 +32,7 @@ const RESULT_PL: Record<string, string> = { passed: 'PRZYJĘTO', rejected: 'ODRZ
 
 function fmt(iso: string | null, pattern: string): string {
   if (!iso) return '—';
-  return format(new Date(iso), pattern, { locale: pl });
+  return format(new Date(iso), pattern, { locale: pl, in: PL_TZ });
 }
 
 /**

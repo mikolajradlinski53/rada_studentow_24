@@ -32,13 +32,13 @@ export function BreakBanner({ session, isChair, sessionId }: { session: Session;
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-amber-700/70 bg-amber-950/30 px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl border border-amber-700/70 bg-amber-950/30 px-4 py-3">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-amber-300">Przerwa w obradach</span>
         <span className="rounded-full bg-amber-900/60 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-amber-200">{remaining}</span>
       </div>
       {isChair && (
-        <button onClick={endBreak} className="text-xs text-amber-300/80 hover:text-amber-200 transition-colors">Zakończ przerwę</button>
+        <button onClick={endBreak} className="press h-9 shrink-0 rounded-xl border border-amber-700/60 px-3 text-[13px] font-medium text-amber-300 hover:bg-amber-950/40">Zakończ przerwę</button>
       )}
     </div>
   );

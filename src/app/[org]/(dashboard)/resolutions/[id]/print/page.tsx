@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { PL_TZ } from '@/lib/dates';
 import { pl, enGB } from 'date-fns/locale';
 import { getOrgContext } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
@@ -31,7 +32,7 @@ export default async function ResolutionPrintPage({
   if (!r || session?.organ_id !== ctx.organId) notFound();
 
   const dateSrc = r.signed_at ?? session?.scheduled_at ?? null;
-  const dateStr = dateSrc ? format(new Date(dateSrc), 'd MMMM yyyy', { locale: lang === 'en' ? enGB : pl }) : '';
+  const dateStr = dateSrc ? format(new Date(dateSrc), 'd MMMM yyyy', { locale: lang === 'en' ? enGB : pl, in: PL_TZ }) : '';
 
   // Fall back to Polish fields when an EN version is missing.
   const title = lang === 'en' ? (r.title_en || r.title) : r.title;

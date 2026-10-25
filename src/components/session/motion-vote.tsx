@@ -76,7 +76,7 @@ export function MotionVoteCard({
           )}
         </div>
       ) : (
-        <div className="rounded-lg border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">
+        <div className="rounded-2xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">
           <div className="text-4xl font-semibold tabular-nums text-zinc-100">{tally.cast}</div>
           <div className="mt-1 text-xs text-zinc-400">oddanych głosów · wynik po zamknięciu (tajne)</div>
         </div>
@@ -130,7 +130,7 @@ export function MotionVoteCard({
 
       {isChair && (
         <button onClick={onClose}
-          className="mt-4 w-full rounded-lg border border-indigo-600 py-2.5 text-sm text-indigo-300 hover:bg-indigo-900/30 transition-colors">
+          className="mt-4 w-full rounded-2xl border border-indigo-600 py-2.5 text-sm text-indigo-300 hover:bg-indigo-900/30 transition-colors">
           Zamknij głosowanie i pokaż wynik
         </button>
       )}

@@ -9,7 +9,7 @@ export function YoutubeEmbed({ url }: { url: string }) {
   const id = youtubeId(url);
   if (!id) return null;
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-lg border border-zinc-800 bg-black">
+    <div className="aspect-video w-full overflow-hidden rounded-2xl border border-zinc-800 bg-black">
       <iframe
         className="h-full w-full"
         src={youtubeEmbedUrl(id)}
@@ -46,7 +46,7 @@ export function Transmission({ org, sessionId, streamUrl, isChair }: { org: stri
               className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Publiczny link ↗</a>
           )}
           {isChair && (
-            <button onClick={() => setEditing((v) => !v)} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            <button onClick={() => setEditing((v) => !v)} className="press h-9 rounded-xl px-3 text-[13px] text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 transition-colors">
               {streamUrl ? 'Zmień' : 'Ustaw transmisję'}
             </button>
           )}
@@ -59,14 +59,14 @@ export function Transmission({ org, sessionId, streamUrl, isChair }: { org: stri
       )}
 
       {isChair && editing && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-3">
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://youtube.com/watch?v=… lub /live/…"
-            className="min-w-48 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+            className="min-w-48 flex-1 h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
           <button onClick={() => save(url.trim() || null)} disabled={busy}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">Zapisz</button>
+            className="rounded-xl bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">Zapisz</button>
           {streamUrl && (
             <button onClick={() => { setUrl(''); save(null); }} disabled={busy}
-              className="text-xs text-zinc-500 hover:text-red-400 transition-colors">Usuń</button>
+              className="press h-9 rounded-xl px-3 text-[13px] text-zinc-400 hover:bg-red-950/30 hover:text-red-400">Usuń</button>
           )}
         </div>
       )}

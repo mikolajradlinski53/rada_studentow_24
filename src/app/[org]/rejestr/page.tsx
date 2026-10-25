@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { clsx } from 'clsx';
+import { ChevronRight, FileText } from 'lucide-react';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { PublicShell } from '@/components/ui/public-shell';
+import { plLong } from '@/lib/dates';
 
-// Public registry — no auth. RLS exposes only published resolutions + org info.
+// Public registry - no auth. RLS exposes only published resolutions + org info.
 export default async function PublicRegistryPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: slug } = await params;
   const supabase = await createServerSupabase();
@@ -19,30 +23,37 @@ export default async function PublicRegistryPage({ params }: { params: Promise<{
     .order('number', { ascending: false });
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <header className="mb-8">
-          <div className="text-xs uppercase tracking-widest text-zinc-500">{org.name}</div>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-100">Rejestr uchwał</h1>
-          <p className="mt-1 text-sm text-zinc-500">Uchwały opublikowane, dostęp publiczny</p>
-        </header>
+    <PublicShell orgName={org.name} slug={slug}>
+      <h1 className="text-[26px] font-semibold tracking-tight text-zinc-50">Rejestr uchwał</h1>
+      <p className="mt-1 text-[15px] text-zinc-500">Uchwały opublikowane przez organ. Dostęp publiczny.</p>
 
+      <div className="mt-7">
         {!resolutions?.length ? (
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-12 text-center text-sm text-zinc-500">
-            Brak opublikowanych uchwał.
+          <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-12 text-center">
+            <FileText className="mx-auto h-8 w-8 text-zinc-600" />
+            <p className="mt-3 text-[15px] text-zinc-300">Brak opublikowanych uchwał</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {resolutions.map((r) => (
+          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
+            {resolutions.map((r, i) => (
               <Link key={r.id} href={`/${slug}/rejestr/${r.id}`}
-                className="block rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-900">
-                <div className="text-sm font-medium text-zinc-200">{r.signature}</div>
-                <div className="mt-0.5 text-xs text-zinc-500">{r.title}</div>
+                className={clsx('press flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-800/30', i > 0 && 'border-t border-zinc-800/80')}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-900/40 text-indigo-300">
+                  <FileText className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-medium text-zinc-100">{r.signature}</div>
+                  <div className="line-clamp-2 text-[13px] leading-snug text-zinc-500">{r.title}</div>
+                  {r.signed_at && (
+                    <div className="mt-0.5 text-[12px] text-zinc-600">{plLong(new Date(r.signed_at)).split(' · ')[0]}</div>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" aria-hidden />
               </Link>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </PublicShell>
   );
 }

@@ -123,7 +123,7 @@ export function AdminClient({
         <div className="mb-6 flex gap-3 rounded-xl border border-amber-900/60 bg-amber-950/30 p-3.5 text-[13px] leading-relaxed text-amber-200/90">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
           <p>
-            Hasła tymczasowe są wyłączone, brakuje <code className="rounded bg-amber-900/40 px-1">SUPABASE_SERVICE_ROLE_KEY</code> w
+            Hasła tymczasowe są wyłączone, brakuje <code className="rounded-lg bg-amber-900/40 px-1">SUPABASE_SERVICE_ROLE_KEY</code> w
             zmiennych środowiskowych. Radni mogą się logować linkiem z maila.
           </p>
         </div>

@@ -18,7 +18,7 @@ export function CreateResolutionButton({ org, voteId }: { org: string; voteId: s
 
   return (
     <button onClick={create} disabled={isPending}
-      className="shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
+      className="press h-9 shrink-0 rounded-xl bg-indigo-600 px-3.5 text-[13px] font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
       {isPending ? 'Tworzenie…' : 'Utwórz uchwałę'}
     </button>
   );

@@ -106,11 +106,11 @@ export function NotificationSettings() {
           ) : (
             <>
               <button onClick={test}
-                className="flex-1 rounded-lg border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-500 sm:flex-none">
+                className="flex-1 rounded-2xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-500 sm:flex-none">
                 Pokaż próbne
               </button>
               <button onClick={turnOff} disabled={busy}
-                className="flex-1 rounded-lg border border-zinc-800 px-4 py-2.5 text-sm text-zinc-400 transition-colors hover:border-red-900 hover:text-red-400 disabled:opacity-50 sm:flex-none">
+                className="flex-1 rounded-2xl border border-zinc-800 px-4 py-2.5 text-sm text-zinc-400 transition-colors hover:border-red-900 hover:text-red-400 disabled:opacity-50 sm:flex-none">
                 {busy ? 'Wyłączanie…' : 'Wyłącz'}
               </button>
             </>

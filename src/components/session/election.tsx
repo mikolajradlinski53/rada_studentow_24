@@ -45,26 +45,26 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="rounded px-2 py-1 text-xs bg-amber-600 text-white hover:bg-amber-500 transition-colors">
+        className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-amber-600 text-white hover:bg-amber-500 transition-colors">
         Otwórz wybory
       </button>
     );
   }
 
   return (
-    <div className="mt-2 w-full space-y-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
+    <div className="mt-2 w-full space-y-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-3">
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4}
         placeholder={'Kandydaci, jeden w wierszu:\nJan Kowalski\nAnna Nowak'}
-        className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+        className="w-full h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-zinc-400">Miejsca do obsadzenia</label>
         <input type="number" min={1} max={20} value={seats} onChange={(e) => setSeats(Math.max(1, Number(e.target.value)))}
-          className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+          className="w-16 h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 focus:border-indigo-500 focus:outline-none" />
         <button onClick={start} disabled={busy}
-          className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50 transition-colors">
+          className="press h-11 rounded-xl bg-amber-600 px-4 text-[15px] font-semibold text-white hover:bg-amber-500 disabled:opacity-50 transition-colors">
           {busy ? 'Otwieranie…' : 'Otwórz głosowanie'}
         </button>
-        <button onClick={() => setOpen(false)} className="text-xs text-zinc-500 hover:text-zinc-300">Anuluj</button>
+        <button onClick={() => setOpen(false)} className="press h-9 rounded-xl px-3 text-[13px] text-zinc-400 hover:text-zinc-200">Anuluj</button>
       </div>
     </div>
   );
@@ -109,7 +109,7 @@ export function ElectionActive({
   };
 
   return (
-    <div className="rounded-lg border-2 border-amber-600 bg-amber-950/20 p-5">
+    <div className="rounded-2xl border-2 border-amber-600 bg-amber-950/20 p-5">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
@@ -149,7 +149,7 @@ export function ElectionActive({
 
       {isChair && (
         <button onClick={close}
-          className="mt-4 w-full rounded-md border border-amber-600 py-2 text-sm text-amber-300 hover:bg-amber-900/30 transition-colors">
+          className="mt-4 w-full rounded-xl border border-amber-600 py-2 text-sm text-amber-300 hover:bg-amber-900/30 transition-colors">
           Zamknij wybory i pokaż wynik
         </button>
       )}

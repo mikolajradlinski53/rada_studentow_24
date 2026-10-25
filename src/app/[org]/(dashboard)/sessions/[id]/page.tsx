@@ -1,10 +1,23 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 import Link from 'next/link';
+import { clsx } from 'clsx';
+import { CalendarDays, ChevronLeft, FileText, MapPin, Radio, ScrollText, Users } from 'lucide-react';
 import { AgendaEditor } from '@/components/session/agenda-editor';
+import { StartSessionButtonClient } from '@/components/session/start-session-button';
+import { CreateResolutionButton } from '@/components/session/create-resolution-button';
 import { getOrgContext } from '@/lib/org';
+import { plLong } from '@/lib/dates';
+import type { SessionStatus } from '@/types/database';
+
+const STATUS: Record<SessionStatus, { label: string; tone: string }> = {
+  draft: { label: 'Szkic', tone: 'bg-zinc-800 text-zinc-400' },
+  scheduled: { label: 'Zaplanowane', tone: 'bg-blue-900/40 text-blue-300' },
+  in_progress: { label: 'Trwa', tone: 'bg-emerald-900/50 text-emerald-300' },
+  closed: { label: 'Zakończone', tone: 'bg-zinc-800 text-zinc-400' },
+  protocol_pending: { label: 'Protokół w przygotowaniu', tone: 'bg-amber-900/40 text-amber-300' },
+  archived: { label: 'Archiwum', tone: 'bg-zinc-800 text-zinc-500' },
+};
 
 export default async function SessionDetailPage({
   params,
@@ -31,105 +44,105 @@ export default async function SessionDetailPage({
 
   if (!session) notFound();
 
-  const { data: agendaItems } = await supabase
-    .from('agenda_items')
-    .select('*')
-    .eq('session_id', id)
-    .order('position');
-
-  const { data: passedVotes } = await supabase
-    .from('votes')
-    .select('id, title')
-    .eq('session_id', id)
-    .eq('status', 'closed')
-    .eq('result', 'passed')
-    .order('closed_at');
-
-  const { data: resolutions } = await supabase
-    .from('resolutions')
-    .select('id, vote_id, signature, title, status')
-    .eq('session_id', id);
+  const [{ data: agendaItems }, { data: passedVotes }, { data: resolutions }, { data: { user } }] = await Promise.all([
+    supabase.from('agenda_items').select('*').eq('session_id', id).order('position'),
+    supabase.from('votes').select('id, title').eq('session_id', id).eq('status', 'closed').eq('result', 'passed').order('closed_at'),
+    supabase.from('resolutions').select('id, vote_id, signature, title, status').eq('session_id', id),
+    supabase.auth.getUser(),
+  ]);
 
   const resByVote = new Map((resolutions ?? []).map((r) => [r.vote_id, r]));
-
-  const { data: { user } } = await supabase.auth.getUser();
-
   const canManage = ctx.role === 'admin' || ctx.role === 'chair' || session.chaired_by === user?.id;
   const canStart = canManage && (session.status === 'scheduled' || session.status === 'draft');
   const isLive = session.status === 'in_progress';
+  const showProtocol = canManage || ['protocol_pending', 'closed', 'archived'].includes(session.status);
+  const status = STATUS[session.status as SessionStatus];
 
-  const date = new Date(session.scheduled_at);
+  const organ = (session as { organ?: { short_name?: string; total_seats?: number } }).organ;
+  const term = (session as { term?: { label?: string } }).term?.label;
+  const chair = (session as { chair_profile?: { full_name?: string } | null }).chair_profile?.full_name;
 
   return (
     <div>
+      <Link href={`/${org}/sessions`}
+        className="press -ml-2 mb-3 inline-flex h-9 items-center gap-0.5 rounded-xl pl-1 pr-3 text-[15px] text-indigo-300 hover:bg-zinc-800/40">
+        <ChevronLeft className="h-5 w-5" /> Posiedzenia
+      </Link>
+
       {/* Header */}
       <div className="mb-8">
-        <Link href={`/${org}/sessions`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-          ← Posiedzenia
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-zinc-100">
-          {session.title}
-        </h1>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-400">
-          <span>{format(date, "EEEE, d MMMM yyyy · HH:mm", { locale: pl })}</span>
-          {session.location && <span>· {session.location}</span>}
-          <span>· {(session as { organ?: { short_name?: string } }).organ?.short_name}</span>
-          <span>· Kadencja {(session as { term?: { label?: string } }).term?.label}</span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={clsx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-medium', status.tone)}>
+            {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />}
+            {status.label}
+          </span>
+          {session.session_type === 'extraordinary' && (
+            <span className="rounded-full border border-amber-800/80 px-2.5 py-0.5 text-[12px] text-amber-400">Nadzwyczajne</span>
+          )}
         </div>
+        <h1 className="mt-3 text-[24px] font-semibold leading-tight tracking-tight text-zinc-50">{session.title}</h1>
 
-        {/* Action buttons */}
-        <div className="mt-4 flex gap-2">
-          {canStart && (
-            <StartSessionButton sessionId={session.id} org={org} />
-          )}
-          {isLive && (
-            <Link
-              href={`/${org}/sessions/${session.id}/live`}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-colors"
-            >
-              Wejdź na posiedzenie →
-            </Link>
-          )}
-          {(canManage || ['protocol_pending', 'closed', 'archived'].includes(session.status)) && (
-            <Link
-              href={`/${org}/sessions/${session.id}/protocol`}
-              className="rounded-md border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
-            >
-              Protokół
-            </Link>
-          )}
-        </div>
+        <dl className="mt-4 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
+          <Meta icon={CalendarDays} label="Termin">{plLong(new Date(session.scheduled_at))}</Meta>
+          {session.location && <Meta icon={MapPin} label="Miejsce">{session.location}</Meta>}
+          <Meta icon={Users} label="Organ">
+            {organ?.short_name}{term && <span className="text-zinc-500"> · kadencja {term}</span>}
+          </Meta>
+          {chair && <Meta icon={Radio} label="Prowadzi">{chair}</Meta>}
+        </dl>
+
+        {(canStart || isLive || showProtocol) && (
+          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+            {canStart && <StartSessionButtonClient sessionId={session.id} org={org} />}
+            {isLive && (
+              <Link href={`/${org}/sessions/${session.id}/live`}
+                className="press flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-[15px] font-semibold text-white hover:bg-emerald-500">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-white" /> Wejdź na posiedzenie
+              </Link>
+            )}
+            {showProtocol && (
+              <Link href={`/${org}/sessions/${session.id}/protocol`}
+                className="press flex h-12 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-5 text-[15px] font-medium text-zinc-200 hover:border-zinc-500">
+                <ScrollText className="h-4 w-4" /> Protokół
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Agenda */}
-      <div>
-        <h2 className="text-sm font-medium text-zinc-300 mb-4">Porządek obrad</h2>
-        <AgendaEditor
-          sessionId={session.id}
-          initialItems={agendaItems ?? []}
-          canEdit={canManage && !isLive}
-        />
-      </div>
+      <section>
+        <div className="mb-2.5 flex items-baseline justify-between">
+          <h2 className="text-[13px] font-medium uppercase tracking-wide text-zinc-500">Porządek obrad</h2>
+          {(agendaItems?.length ?? 0) > 0 && (
+            <span className="text-[13px] tabular-nums text-zinc-500">{agendaItems!.length} pkt</span>
+          )}
+        </div>
+        <AgendaEditor sessionId={session.id} initialItems={agendaItems ?? []} canEdit={canManage && !isLive} />
+      </section>
 
       {/* Resolutions from passed votes */}
       {(passedVotes?.length ?? 0) > 0 && (
-        <div className="mt-8">
-          <h2 className="text-sm font-medium text-zinc-300 mb-4">Uchwały</h2>
-          <div className="space-y-1.5">
-            {passedVotes!.map((v) => {
+        <section className="mt-8">
+          <h2 className="mb-2.5 text-[13px] font-medium uppercase tracking-wide text-zinc-500">Uchwały</h2>
+          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
+            {passedVotes!.map((v, i) => {
               const res = resByVote.get(v.id);
               return (
-                <div key={v.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm text-zinc-200">
+                <div key={v.id} className={clsx('flex items-center gap-3 px-4 py-3', i > 0 && 'border-t border-zinc-800/80')}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-900/40 text-indigo-300">
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[15px] text-zinc-100">
                       {res ? res.signature : v.title.replace(/^Głosowanie:\s*/i, '')}
                     </div>
-                    <div className="text-xs text-zinc-500">{res ? 'Uchwała utworzona' : 'Głosowanie przyjęte'}</div>
+                    <div className="text-[13px] text-zinc-500">{res ? 'Uchwała utworzona' : 'Głosowanie przyjęte'}</div>
                   </div>
                   {res ? (
                     <Link href={`/${org}/resolutions/${res.id}`}
-                      className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
-                      Otwórz uchwałę
+                      className="press flex h-9 shrink-0 items-center rounded-xl border border-zinc-700 px-3.5 text-[13px] font-medium text-zinc-200 hover:border-zinc-500">
+                      Otwórz
                     </Link>
                   ) : canManage ? (
                     <CreateResolutionButton org={org} voteId={v.id} />
@@ -138,16 +151,18 @@ export default async function SessionDetailPage({
               );
             })}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
 }
 
-// Client component for the start button
-function StartSessionButton({ sessionId, org }: { sessionId: string; org: string }) {
-  return <StartSessionButtonClient sessionId={sessionId} org={org} />;
+function Meta({ icon: Icon, label, children }: { icon: typeof CalendarDays; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 border-t border-zinc-800/80 px-4 py-3 first:border-t-0">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
+      <dt className="sr-only">{label}</dt>
+      <dd className="min-w-0 text-[15px] text-zinc-200">{children}</dd>
+    </div>
+  );
 }
-
-import { StartSessionButtonClient } from '@/components/session/start-session-button';
-import { CreateResolutionButton } from '@/components/session/create-resolution-button';

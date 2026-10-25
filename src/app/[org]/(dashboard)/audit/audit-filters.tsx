@@ -19,29 +19,28 @@ export function AuditFilters({ actions }: { actions: [string, string][] }) {
   const to = params.get('to') ?? '';
   const hasAny = action || from || to;
 
+  const field = 'h-11 w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30';
+
   return (
-    <div className="mb-5 flex flex-wrap items-end gap-2">
-      <div>
-        <label className="mb-1 block text-xs text-zinc-500">Akcja</label>
-        <select value={action} onChange={(e) => setParam('action', e.target.value)}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">
+    <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
+      <div className="col-span-2 sm:col-span-1">
+        <label htmlFor="f-action" className="mb-1.5 block px-1 text-[13px] font-medium text-zinc-400">Akcja</label>
+        <select id="f-action" value={action} onChange={(e) => setParam('action', e.target.value)} className={field}>
           <option value="">Wszystkie</option>
           {actions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-zinc-500">Od</label>
-        <input type="date" value={from} onChange={(e) => setParam('from', e.target.value)}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+        <label htmlFor="f-from" className="mb-1.5 block px-1 text-[13px] font-medium text-zinc-400">Od</label>
+        <input id="f-from" type="date" value={from} onChange={(e) => setParam('from', e.target.value)} className={field} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-zinc-500">Do</label>
-        <input type="date" value={to} onChange={(e) => setParam('to', e.target.value)}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+        <label htmlFor="f-to" className="mb-1.5 block px-1 text-[13px] font-medium text-zinc-400">Do</label>
+        <input id="f-to" type="date" value={to} onChange={(e) => setParam('to', e.target.value)} className={field} />
       </div>
       {hasAny && (
         <button onClick={() => router.replace(pathname)}
-          className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+          className="press col-span-2 h-11 rounded-xl border border-zinc-700 px-4 text-[14px] text-zinc-300 hover:border-zinc-500 sm:col-span-1">
           Wyczyść
         </button>
       )}

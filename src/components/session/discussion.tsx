@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { clsx } from 'clsx';
+import { Hand } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { broadcastPush } from '@/lib/push-client';
 import type { FloorRequest, FormalMotionType, Mandate, Session } from '@/types/database';
@@ -105,7 +106,7 @@ export function Discussion({
       <BreakBanner session={session} isChair={isChair} sessionId={sessionId} />
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-zinc-400">Dyskusja · głos i wnioski</h2>
+        <h2 className="text-[13px] font-medium uppercase tracking-wide text-zinc-500">Dyskusja</h2>
         {speaker && (
           <span className="text-xs text-indigo-300">
             Głos ma: <span className="font-medium">{speaker.mandate?.profile?.full_name ?? '-'}</span>
@@ -116,7 +117,7 @@ export function Discussion({
       {/* Member request controls */}
       {myMandate && live && (
         myReq ? (
-          <div className="flex items-center justify-between rounded-lg border border-indigo-800/60 bg-indigo-950/20 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-800/60 bg-indigo-950/20 px-4 py-3">
             <div className="text-sm text-zinc-200">
               {reqLabel(myReq)}
               <span className="ml-2 text-xs text-zinc-500">
@@ -124,37 +125,37 @@ export function Discussion({
               </span>
             </div>
             {myReq.status !== 'speaking' && (
-              <button onClick={() => withdraw(myReq.id)} className="text-xs text-zinc-500 hover:text-red-400 transition-colors">Wycofaj</button>
+              <button onClick={() => withdraw(myReq.id)} className="press h-9 shrink-0 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:border-red-900 hover:text-red-400">Wycofaj</button>
             )}
           </div>
         ) : (
           <div className="space-y-2">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button onClick={() => request('speak')}
-                className="rounded-lg bg-indigo-600 py-3 text-sm font-medium text-white hover:bg-indigo-500 transition-colors active:scale-95">✋ Zabierz głos</button>
+                className="press flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-semibold text-white hover:bg-indigo-500"><Hand className="h-4 w-4" /> Zabierz głos</button>
               <button onClick={() => request('ad_vocem')}
-                className="rounded-lg bg-zinc-700 py-3 text-sm font-medium text-zinc-100 hover:bg-zinc-600 transition-colors active:scale-95">Ad vocem</button>
+                className="press h-12 rounded-xl bg-zinc-700 text-[15px] font-semibold text-zinc-100 hover:bg-zinc-600">Ad vocem</button>
               <button onClick={() => setShowFormal((v) => !v)}
-                className="rounded-lg border border-amber-700/70 py-3 text-sm font-medium text-amber-300 hover:bg-amber-950/30 transition-colors active:scale-95">Wniosek formalny</button>
+                className="press h-12 rounded-xl border border-amber-700/70 text-[15px] font-semibold text-amber-300 hover:bg-amber-950/30">Wniosek formalny</button>
             </div>
             {showFormal && (
-              <div className="space-y-2 rounded-lg border border-zinc-700 bg-zinc-900 p-3">
+              <div className="space-y-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <select value={formalType} onChange={(e) => setFormalType(e.target.value as FormalMotionType)}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none">
+                    className="h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 focus:border-indigo-500 focus:outline-none">
                     {(Object.keys(FORMAL_LABEL) as FormalMotionType[]).map((t) => <option key={t} value={t}>{FORMAL_LABEL[t]}</option>)}
                   </select>
                   {TIMED.includes(formalType) && (
                     <div className="flex items-center gap-1.5">
                       <input type="number" min={1} max={120} value={minutes} onChange={(e) => setMinutes(Math.max(1, Number(e.target.value)))}
-                        className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:border-indigo-500 focus:outline-none" />
+                        className="w-16 h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 focus:border-indigo-500 focus:outline-none" />
                       <span className="text-xs text-zinc-500">min</span>
                     </div>
                   )}
                 </div>
                 <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Uzasadnienie (opcjonalnie)"
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
-                <button onClick={submitFormal} className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500 transition-colors">Złóż wniosek</button>
+                  className="w-full h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+                <button onClick={submitFormal} className="press h-11 rounded-xl bg-amber-600 px-4 text-[15px] font-semibold text-white hover:bg-amber-500 transition-colors">Złóż wniosek</button>
               </div>
             )}
           </div>
@@ -169,36 +170,36 @@ export function Discussion({
             const isSpeaking = r.status === 'speaking';
             return (
               <div key={r.id}
-                className={clsx('flex items-center justify-between rounded-lg border px-4 py-2.5',
+                className={clsx('flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border px-4 py-3',
                   isSpeaking ? 'border-indigo-600 bg-indigo-950/30'
                     : isFormal ? 'border-amber-800/70 bg-amber-950/10'
                     : 'border-zinc-800 bg-zinc-900/50')}>
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span className="w-4 shrink-0 text-xs text-zinc-600 tabular-nums">{idx + 1}</span>
                   <div className="min-w-0">
-                    <div className="truncate text-sm text-zinc-200">{r.mandate?.profile?.full_name ?? '-'}</div>
-                    <div className={clsx('text-xs', isFormal ? 'text-amber-400' : isSpeaking ? 'text-indigo-300' : 'text-zinc-500')}>
+                    <div className="truncate text-[15px] text-zinc-100">{r.mandate?.profile?.full_name ?? '-'}</div>
+                    <div className={clsx('text-[13px]', isFormal ? 'text-amber-400' : isSpeaking ? 'text-indigo-300' : 'text-zinc-500')}>
                       {isSpeaking ? 'Głos ma' : reqLabel(r)}{r.note ? ` · ${r.note}` : ''}
                     </div>
                   </div>
                 </div>
 
                 {isChair && (
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     {isSpeaking ? (
-                      <button onClick={() => endSpeaker(r.id)} className="rounded px-2 py-1 text-xs bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors">Zakończ</button>
+                      <button onClick={() => endSpeaker(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors">Zakończ</button>
                     ) : isFormal ? (
                       <>
                         {canOpenVote && (
-                          <button onClick={() => voteOnMotion(r)} className="rounded px-2 py-1 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Głosuj</button>
+                          <button onClick={() => voteOnMotion(r)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Głosuj</button>
                         )}
-                        <button onClick={() => acceptMotion(r)} className="rounded px-2 py-1 text-xs bg-amber-600 text-white hover:bg-amber-500 transition-colors">Przyjmij</button>
-                        <button onClick={() => reject(r.id)} className="rounded px-2 py-1 text-xs text-zinc-500 hover:text-red-400 transition-colors">Odrzuć</button>
+                        <button onClick={() => acceptMotion(r)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-amber-600 text-white hover:bg-amber-500 transition-colors">Przyjmij</button>
+                        <button onClick={() => reject(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium text-zinc-500 hover:text-red-400 transition-colors">Odrzuć</button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => callSpeaker(r.id)} className="rounded px-2 py-1 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Udziel głosu</button>
-                        <button onClick={() => reject(r.id)} className="rounded px-2 py-1 text-xs text-zinc-500 hover:text-red-400 transition-colors">Odrzuć</button>
+                        <button onClick={() => callSpeaker(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Udziel głosu</button>
+                        <button onClick={() => reject(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium text-zinc-500 hover:text-red-400 transition-colors">Odrzuć</button>
                       </>
                     )}
                   </div>
@@ -208,7 +209,7 @@ export function Discussion({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-zinc-800 px-4 py-3 text-center text-xs text-zinc-600">
+        <div className="rounded-2xl border border-dashed border-zinc-800 px-4 py-4 text-center text-[13px] text-zinc-500">
           Brak zgłoszeń do głosu.
         </div>
       )}
