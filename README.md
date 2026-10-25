@@ -61,9 +61,10 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...   # hasła tymczasowe dla radnych (TYLKO serwer
 widoczne raz, do wysłania przyciskiem „Wyślij radnemu”. Przy pierwszym logowaniu
 radny ustawia własne hasło. Hasła wymagają `SUPABASE_SERVICE_ROLE_KEY` (Supabase →
 Settings → API → `service_role`; nigdy z prefiksem `NEXT_PUBLIC_`). Zapasowo działa
-logowanie **6-cyfrowym kodem z maila** — w Supabase → Authentication → Email
-Templates → *Magic Link* dodaj do treści `{{ .Token }}`, inaczej mail będzie
-zawierał tylko link (na iPhonie link otwiera Safari zamiast zainstalowanej aplikacji).
+logowanie **linkiem z maila** (na iPhonie link otwiera Safari, nie zainstalowaną
+aplikację). Gdy będzie domena + własny SMTP, w Supabase → Authentication → Email
+Templates → *Magic Link* dodaj `{{ .Token }}` i ustaw `NEXT_PUBLIC_EMAIL_OTP_CODE=1`
+— logowanie przełączy się na 6-cyfrowy kod, który działa też w aplikacji.
 
 Klucze VAPID generuje się **raz** i nie zmienia — nowa para unieważnia wszystkie
 zapisane subskrypcje (każdy musiałby włączyć powiadomienia od nowa). Na iOS

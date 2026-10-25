@@ -51,7 +51,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ org: s
         <h2 className="text-sm font-medium text-zinc-400">Hasło</h2>
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
           <p className="mb-3 text-xs leading-relaxed text-zinc-500">
-            Zmień hasło, którym logujesz się w aplikacji. Zawsze możesz też zalogować się kodem z maila.
+            Zmień hasło, którym logujesz się w aplikacji. Zawsze możesz też zalogować się linkiem z maila.
           </p>
           <PasswordForm submitLabel="Zmień hasło" />
         </div>

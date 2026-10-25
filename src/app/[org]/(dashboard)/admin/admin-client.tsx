@@ -124,7 +124,7 @@ export function AdminClient({
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
           <p>
             Hasła tymczasowe są wyłączone — brakuje <code className="rounded bg-amber-900/40 px-1">SUPABASE_SERVICE_ROLE_KEY</code> w
-            zmiennych środowiskowych. Radni mogą się logować kodem z maila.
+            zmiennych środowiskowych. Radni mogą się logować linkiem z maila.
           </p>
         </div>
       )}
@@ -251,7 +251,7 @@ export function AdminClient({
           <div className="space-y-3">
             <p className="text-[14px] leading-relaxed text-zinc-400">
               Ta osoba jeszcze się nie zalogowała. Nadaj jej hasło tymczasowe i wyślij — albo niech zaloguje się
-              kodem z maila na adres <span className="text-zinc-200">{selectedInvite.email}</span>.
+              linkiem z maila na adres <span className="text-zinc-200">{selectedInvite.email}</span>.
             </p>
             {passwordsEnabled ? (
               <button onClick={() => issueFor(selectedInvite.email)} disabled={isPending}
@@ -453,7 +453,7 @@ function inviteText({ orgName, email, name, password, role }: { orgName: string;
     '',
     `1. Otwórz: ${link}`,
     `2. Email: ${email}`,
-    password ? `3. Hasło tymczasowe: ${password}` : '3. Wybierz „Kod z maila” i wpisz kod, który przyjdzie na ten adres.',
+    password ? `3. Hasło tymczasowe: ${password}` : '3. Wybierz „Link z maila” — link przyjdzie na ten adres.',
     '',
     password ? 'Po zalogowaniu ustawisz własne hasło.' : '',
     'Na telefonie dodaj stronę do ekranu głównego — dostaniesz powiadomienia o głosowaniach.',

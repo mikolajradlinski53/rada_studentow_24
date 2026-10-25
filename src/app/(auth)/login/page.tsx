@@ -8,6 +8,11 @@ import { createClient } from '@/lib/supabase/client';
 
 type Mode = 'password' | 'code';
 
+// The 6-digit code needs {{ .Token }} in Supabase's Magic Link email template,
+// which on the free plan requires custom SMTP (a domain). Until then the email
+// carries only a link — set NEXT_PUBLIC_EMAIL_OTP_CODE=1 once the template has the code.
+const EMAIL_CODE = process.env.NEXT_PUBLIC_EMAIL_OTP_CODE === '1';
+
 export default function LoginPage() {
   return (
     <Suspense>
@@ -42,7 +47,7 @@ function Login() {
     setBusy(false);
     if (error) {
       setError(error.message.toLowerCase().includes('invalid')
-        ? 'Nieprawidłowy email lub hasło. Nie masz hasła? Zaloguj się kodem z maila.'
+        ? `Nieprawidłowy email lub hasło. Nie masz hasła? Poproś administratora albo zaloguj się ${EMAIL_CODE ? 'kodem' : 'linkiem'} z maila.`
         : 'Nie udało się zalogować. Spróbuj ponownie za chwilę.');
       return;
     }
@@ -60,7 +65,7 @@ function Login() {
     if (error) {
       setError(error.status === 429
         ? 'Za dużo prób wysyłki maila. Odczekaj chwilę albo zaloguj się hasłem.'
-        : 'Nie udało się wysłać kodu. Sprawdź adres email.');
+        : 'Nie udało się wysłać maila. Sprawdź adres email.');
       return;
     }
     setCodeSent(true);
@@ -95,7 +100,7 @@ function Login() {
                   onClick={() => { setMode(m); setError(null); }}
                   className={clsx('h-9 rounded-lg text-[14px] font-medium transition-colors',
                     mode === m ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
-                  {m === 'password' ? 'Hasło' : 'Kod z maila'}
+                  {m === 'password' ? 'Hasło' : EMAIL_CODE ? 'Kod z maila' : 'Link z maila'}
                 </button>
               ))}
             </div>
@@ -138,15 +143,43 @@ function Login() {
               <button type="submit" disabled={busy || !email}
                 className="press flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-[15px] font-semibold text-white hover:bg-indigo-500 disabled:opacity-40">
                 <Mail className="h-4 w-4" />
-                {busy ? 'Wysyłanie…' : 'Wyślij kod'}
+                {busy ? 'Wysyłanie…' : EMAIL_CODE ? 'Wyślij kod' : 'Wyślij link'}
               </button>
               <p className="pt-1 text-center text-[13px] leading-relaxed text-zinc-500">
-                Dostaniesz maila z 6-cyfrowym kodem (i linkiem) — bez hasła.
+                {EMAIL_CODE
+                  ? 'Dostaniesz maila z 6-cyfrowym kodem (i linkiem) — bez hasła.'
+                  : 'Dostaniesz maila z jednorazowym linkiem — bez hasła.'}
               </p>
             </form>
           )}
 
-          {mode === 'code' && codeSent && (
+          {mode === 'code' && codeSent && !EMAIL_CODE && (
+            <div className="space-y-4 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[15px] text-zinc-300">Wysłaliśmy link na</p>
+                <p className="mt-0.5 break-all text-[15px] font-medium text-zinc-50">{email}</p>
+              </div>
+              <p className="text-[13px] leading-relaxed text-zinc-500">
+                Otwórz maila na tym urządzeniu i kliknij link. Na iPhonie z aplikacją na ekranie
+                głównym link otworzy się w Safari — wygodniej zalogować się tam hasłem.
+              </p>
+              <div className="flex items-center justify-between">
+                <button onClick={() => { setCodeSent(false); setError(null); }}
+                  className="press flex h-10 items-center gap-1.5 rounded-lg px-2 text-[14px] text-zinc-400 hover:text-zinc-200">
+                  <ArrowLeft className="h-4 w-4" /> Inny adres
+                </button>
+                <button onClick={() => sendCode()} disabled={busy}
+                  className="press h-10 rounded-lg px-2 text-[14px] text-indigo-300 hover:text-indigo-200 disabled:opacity-40">
+                  Wyślij ponownie
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'code' && codeSent && EMAIL_CODE && (
             <div className="space-y-4">
               <div className="text-center">
                 <p className="text-[15px] text-zinc-300">Wpisz kod wysłany na</p>
