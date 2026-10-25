@@ -33,6 +33,10 @@ per-instancja, self-serve multi-tenant.
 - **Transmisja**: embed YouTube w aplikacji + publiczna strona `/[org]/transmisja/[id]`.
 - **Audyt** (Komisja Rewizyjna): log zdarzeń z filtrami i eksportem CSV.
 - **Profil**: użytkownik ustawia imię i nazwisko.
+- **Aplikacja na telefon (PWA)**: instalacja na ekranie głównym (Android: jeden
+  przycisk, iOS: Udostępnij → Do ekranu początkowego), dolny pasek nawigacji,
+  **powiadomienia push** o otwarciu posiedzenia i każdego głosowania, ekran nie
+  gaśnie w trakcie posiedzenia, głos potwierdzany w dwóch krokach, strona offline.
 
 Szczegółowy status i plany: [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -46,7 +50,14 @@ Lokalnie w `.env.local`, na produkcji w **Vercel → Settings → Environment Va
 NEXT_PUBLIC_SUPABASE_URL=https://twoj-projekt.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ... (anon / publishable key)
 WHISPER_API_URL=https://whisper.twoj-serwer.pl/v1/audio/transcriptions  # opcjonalnie
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # opcjonalnie — powiadomienia push
+VAPID_PRIVATE_KEY=...              # (npx web-push generate-vapid-keys)
+VAPID_SUBJECT=mailto:admin@twoja-domena.pl
 ```
+
+Klucze VAPID generuje się **raz** i nie zmienia — nowa para unieważnia wszystkie
+zapisane subskrypcje (każdy musiałby włączyć powiadomienia od nowa). Na iOS
+powiadomienia działają od iOS 16.4 i tylko w aplikacji dodanej do ekranu głównego.
 
 Transkrypcja auto-protokołu używa **self-hostowanego Whispera** (jeden serwer dla
 wszystkich podmiotów, stały koszt zamiast opłat za minutę) — zob.
@@ -73,6 +84,8 @@ W Supabase **SQL Editor** uruchom po kolei (idempotentne):
 010_transmission.sql      — transmisja (stream_url) + publiczny odczyt
 011_multiseat_elections.sql — wybory wielomandatowe
 012_user_names.sql        — imię i nazwisko z zaproszenia
+013_resolution_bilingual.sql — uchwały PL/EN
+014_push_notifications.sql — subskrypcje push (PWA) + broadcast RPC
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

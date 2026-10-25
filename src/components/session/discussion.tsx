@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
+import { broadcastPush } from '@/lib/push-client';
 import type { FloorRequest, FormalMotionType, Mandate, Session } from '@/types/database';
 import { BreakBanner } from './break-banner';
 
@@ -91,6 +92,7 @@ export function Discussion({
     }).select('id').single();
     if (vote) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { procedural: true } });
+      broadcastPush('vote_opened', vote.id);
     }
   };
   const submitFormal = async () => {

@@ -6,6 +6,8 @@ import { pl } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import { getOrgContext } from '@/lib/org';
 import type { SessionStatus } from '@/types/database';
+import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { NotificationNudge } from '@/components/pwa/notification-toggle';
 
 const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string }> = {
   draft: { label: 'Szkic', color: 'bg-zinc-700 text-zinc-300' },
@@ -34,7 +36,9 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <InstallPrompt />
+
+      <div className="mb-6 flex items-center justify-between gap-3 md:mb-8">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">Posiedzenia</h1>
           <p className="mt-1 text-sm text-zinc-500">
@@ -44,12 +48,14 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
         {canCreate && (
           <Link
             href={`/${org}/sessions/new`}
-            className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+            className="shrink-0 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
           >
-            Nowe posiedzenie
+            <span className="sm:hidden">+ Nowe</span><span className="hidden sm:inline">Nowe posiedzenie</span>
           </Link>
         )}
       </div>
+
+      <div className="mb-4 empty:hidden"><NotificationNudge /></div>
 
       {!sessions?.length ? (
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-12 text-center">
@@ -77,10 +83,15 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
                     ? `/${org}/sessions/${session.id}/live`
                     : `/${org}/sessions/${session.id}`
                 }
-                className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/50 px-5 py-4 hover:border-zinc-700 hover:bg-zinc-900 transition-colors group"
+                className={clsx(
+                  'group flex items-center gap-4 rounded-xl border px-4 py-3.5 transition-colors active:scale-[0.99] sm:px-5 sm:py-4',
+                  session.status === 'in_progress'
+                    ? 'border-emerald-700/70 bg-emerald-950/20 hover:border-emerald-600'
+                    : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
+                )}
               >
                 {/* Date block */}
-                <div className="shrink-0 w-14 text-center">
+                <div className="w-11 shrink-0 text-center sm:w-14">
                   <div className="text-2xl font-semibold text-zinc-300 group-hover:text-zinc-100 transition-colors">
                     {format(date, 'd')}
                   </div>
@@ -90,30 +101,42 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
                 </div>
 
                 {/* Separator */}
-                <div className="h-10 w-px bg-zinc-800" />
+                <div className="h-10 w-px shrink-0 bg-zinc-800" />
 
                 {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-zinc-200 truncate">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-zinc-200">
                     {session.title}
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-500">
-                    {format(date, "EEEE, d MMMM yyyy · HH:mm", { locale: pl })}
+                  <div className="mt-0.5 truncate text-xs text-zinc-500">
+                    <span className="sm:hidden">{format(date, 'EEE, HH:mm', { locale: pl })}</span>
+                    <span className="hidden sm:inline">{format(date, "EEEE, d MMMM yyyy · HH:mm", { locale: pl })}</span>
                     {session.location && ` · ${session.location}`}
+                  </div>
+                  {/* Badges under the title on phones */}
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 sm:hidden">
+                    <span className={clsx('rounded-full px-2 py-0.5 text-[11px] font-medium', status.color)}>
+                      {session.status === 'in_progress' && '● '}{status.label}
+                    </span>
+                    {session.session_type === 'extraordinary' && (
+                      <span className="rounded-full border border-amber-800 px-2 py-0.5 text-[11px] text-amber-400">Nadzwyczajne</span>
+                    )}
                   </div>
                 </div>
 
                 {/* Status */}
-                <span className={clsx('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium', status.color)}>
+                <span className={clsx('hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium sm:inline', status.color)}>
                   {status.label}
                 </span>
 
                 {/* Type badge */}
                 {session.session_type === 'extraordinary' && (
-                  <span className="shrink-0 rounded-full border border-amber-800 px-2 py-0.5 text-xs text-amber-400">
+                  <span className="hidden shrink-0 rounded-full border border-amber-800 px-2 py-0.5 text-xs text-amber-400 sm:inline">
                     Nadzwyczajne
                   </span>
                 )}
+
+                <span className="shrink-0 text-zinc-600 sm:hidden" aria-hidden>›</span>
               </Link>
             );
           })}

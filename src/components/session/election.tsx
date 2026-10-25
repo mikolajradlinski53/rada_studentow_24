@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
 import { fetchElectionResults } from '@/lib/use-live-session';
+import { broadcastPush } from '@/lib/push-client';
 import type { AgendaItem, Vote, VoteCandidate, Mandate, ElectionResult, BallotChoice } from '@/types/database';
 
 const now = () => new Date().toISOString();
@@ -36,6 +37,7 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
         names.map((name, i) => ({ vote_id: vote.id, name, position: i }))
       );
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { kind: 'election' } });
+      broadcastPush('vote_opened', vote.id); // after candidates exist, so the tap lands on a full ballot
     }
     setBusy(false); setOpen(false); setText('');
   };

@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { clsx } from 'clsx';
-import { useLiveSession, tallyOf } from '@/lib/use-live-session';
-import { TallyBar, VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
+import { useLiveSession } from '@/lib/use-live-session';
+import { VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
 import { Discussion } from '@/components/session/discussion';
 import { RollCall } from '@/components/session/roll-call';
 import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/session/election';
 import { Transmission } from '@/components/session/transmission';
+import { MotionVoteCard } from '@/components/session/motion-vote';
+import { NotificationNudge } from '@/components/pwa/notification-toggle';
+import { broadcastPush } from '@/lib/push-client';
+import { useWakeLock } from '@/lib/use-wake-lock';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -31,6 +35,22 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     myMandate?.role === 'admin' ||
     (!!session?.chaired_by && session.chaired_by === myMandate?.profile_id);
 
+  // Keep the screen on for the whole sitting — a locked phone misses votes.
+  useWakeLock(session?.status === 'in_progress');
+
+  // A vote just opened (realtime): buzz the phone and bring the ballot into view.
+  const voteCardRef = useRef<HTMLDivElement>(null);
+  const lastVoteId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (loading) return;
+    const id = activeVote?.id ?? null;
+    if (lastVoteId.current !== undefined && id && id !== lastVoteId.current) {
+      navigator.vibrate?.([80, 40, 80]);
+      voteCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    lastVoteId.current = id;
+  }, [activeVote?.id, loading]);
+
   // === ACTIONS ===
   const checkIn = async () => {
     if (!myMandate) return;
@@ -51,6 +71,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     }).select('id').single();
     if (created) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: created.id, p_metadata: { vote_type: voteType } });
+      broadcastPush('vote_opened', created.id);
     }
   };
 
@@ -60,14 +81,16 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: {} });
   };
 
-  const castBallot = async (choice: BallotChoice) => {
-    if (!activeVote || !myMandate || myBallot) return;
+  const castBallot = async (choice: BallotChoice): Promise<boolean> => {
+    if (!activeVote || !myMandate || myBallot) return false;
     const { error } = await supabase.rpc('cast_ballot', {
       p_vote_id: activeVote.id, p_mandate_id: myMandate.id, p_choice: choice,
     });
-    if (error) { alert('Nie udało się oddać głosu. Odśwież stronę i spróbuj ponownie.'); return; }
+    if (error) { alert('Nie udało się oddać głosu. Odśwież stronę i spróbuj ponownie.'); return false; }
+    navigator.vibrate?.(40);
     // Records participation only (never the choice) — keeps secret votes anonymous.
     await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: { vote_type: activeVote.vote_type } });
+    return true;
   };
 
   const closeSession = async () => {
@@ -86,7 +109,6 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const myAttendance = attendance.find((a) => a.mandate_id === myMandate?.id);
   const isCheckedIn = myAttendance?.status === 'present' || myAttendance?.status === 'late';
-  const tally = tallyOf(activeVote, openVoteBallots);
   const eligible = quorum?.total_seats ?? presentCount;
 
   // mandate_id -> name, for open-vote voter chips
@@ -121,9 +143,11 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         </div>
       </div>
 
+      <div className="empty:hidden"><NotificationNudge /></div>
+
       {/* Quorum meter */}
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-        <div className="flex items-center justify-between mb-2">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <div className="flex items-center gap-3">
             <span className="text-sm text-zinc-400">Obecność</span>
             <span className={clsx('rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -145,7 +169,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
         {myMandate && !isCheckedIn && session.attendance_mode === 'self' && (
           <button onClick={checkIn}
-            className="mt-3 w-full rounded-md bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 transition-colors">
+            className="mt-3 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-900/30 transition-transform hover:bg-emerald-500 active:scale-[0.98]">
             Potwierdź obecność
           </button>
         )}
@@ -154,6 +178,38 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         )}
         {isCheckedIn && <div className="mt-2 text-xs text-emerald-400">✓ Jesteś obecny/a</div>}
       </div>
+
+      {/* Active vote — right under attendance, the one thing a member is here for */}
+      {activeVote && (
+        <div ref={voteCardRef} className="scroll-mt-4">
+          {activeVote.vote_kind === 'election' ? (
+            <ElectionActive
+              vote={activeVote}
+              candidates={candidates}
+              myMandate={myMandate}
+              myBallot={myBallot}
+              isCheckedIn={isCheckedIn}
+              isChair={isChair}
+              presentCount={presentCount}
+            />
+          ) : (
+            <MotionVoteCard
+              key={activeVote.id}
+              vote={activeVote}
+              ballots={openVoteBallots}
+              myBallot={myBallot}
+              myMandate={myMandate}
+              isCheckedIn={isCheckedIn}
+              isChair={isChair}
+              presentCount={presentCount}
+              eligible={eligible}
+              nameByMandate={nameByMandate}
+              onCast={castBallot}
+              onClose={closeVote}
+            />
+          )}
+        </div>
+      )}
 
       {/* Chair roll call */}
       {isChair && (
@@ -167,90 +223,6 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
       {/* Transmission (YouTube) */}
       <Transmission org={org} sessionId={sessionId} streamUrl={session.stream_url} isChair={isChair} />
-
-      {/* Active election */}
-      {activeVote && activeVote.vote_kind === 'election' && (
-        <ElectionActive
-          vote={activeVote}
-          candidates={candidates}
-          myMandate={myMandate}
-          myBallot={myBallot}
-          isCheckedIn={isCheckedIn}
-          isChair={isChair}
-          presentCount={presentCount}
-        />
-      )}
-
-      {/* Active motion vote */}
-      {activeVote && activeVote.vote_kind !== 'election' && (
-        <div className="rounded-lg border-2 border-indigo-600 bg-indigo-950/20 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-              <h2 className="text-sm font-medium text-indigo-300">
-                Głosowanie {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'} · na żywo
-              </h2>
-            </div>
-            <span className="text-xs tabular-nums text-zinc-400">oddano {tally.cast} / {presentCount}</span>
-          </div>
-          <p className="text-base font-medium text-zinc-100 mb-4">{activeVote.title}</p>
-
-          {/* Live tally */}
-          {activeVote.vote_type === 'open' ? (
-            <div className="space-y-3">
-              <TallyBar label="ZA" count={tally.forN} total={eligible} tone="for" />
-              <TallyBar label="PRZECIW" count={tally.against} total={eligible} tone="against" />
-              <TallyBar label="WSTRZYMUJĘ SIĘ" count={tally.abstain} total={eligible} tone="abstain" />
-              {openVoteBallots.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {openVoteBallots.map((b) => (
-                    <span key={b.id}
-                      className={clsx('rounded-full px-2 py-0.5 text-xs',
-                        b.choice === 'for' ? 'bg-emerald-900/40 text-emerald-300'
-                          : b.choice === 'against' ? 'bg-red-900/40 text-red-300'
-                          : 'bg-zinc-800 text-zinc-400')}>
-                      {b.mandate_id ? nameByMandate.get(b.mandate_id) ?? '—' : '—'}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">
-              <div className="text-4xl font-semibold tabular-nums text-zinc-100">{tally.cast}</div>
-              <div className="mt-1 text-xs text-zinc-400">oddanych głosów · wynik po zamknięciu (tajne)</div>
-            </div>
-          )}
-
-          {/* Voting buttons — big thumb targets, stacked on phones */}
-          {isCheckedIn && !myBallot && (
-            <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              <button onClick={() => castBallot('for')}
-                className="rounded-xl bg-emerald-600 py-5 text-base font-semibold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500 transition-transform active:scale-95">ZA</button>
-              <button onClick={() => castBallot('against')}
-                className="rounded-xl bg-red-600 py-5 text-base font-semibold text-white shadow-lg shadow-red-900/30 hover:bg-red-500 transition-transform active:scale-95">PRZECIW</button>
-              <button onClick={() => castBallot('abstain')}
-                className="rounded-xl bg-zinc-600 py-5 text-base font-semibold text-white hover:bg-zinc-500 transition-transform active:scale-95">WSTRZYMUJĘ SIĘ</button>
-            </div>
-          )}
-          {myBallot && (
-            <div className="mt-4 text-center text-sm text-indigo-300">
-              ✓ Głos oddany
-              {activeVote.vote_type === 'open' && (
-                <span className="text-zinc-500"> ({myBallot === 'for' ? 'za' : myBallot === 'against' ? 'przeciw' : 'wstrzymuję się'})</span>
-              )}
-            </div>
-          )}
-          {!isCheckedIn && <p className="mt-4 text-center text-sm text-zinc-500">Potwierdź obecność, aby głosować.</p>}
-
-          {isChair && (
-            <button onClick={closeVote}
-              className="mt-4 w-full rounded-md border border-indigo-600 py-2 text-sm text-indigo-300 hover:bg-indigo-900/30 transition-colors">
-              Zamknij głosowanie i pokaż wynik
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Discussion / speaker queue + procedural motions */}
       <Discussion
@@ -272,17 +244,17 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                 item.status === 'in_progress' ? 'border-indigo-600 bg-indigo-950/20'
                   : item.status === 'completed' ? 'border-zinc-800 bg-zinc-900/30 opacity-60'
                   : 'border-zinc-800 bg-zinc-900/50')}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-500 w-5">{idx + 1}.</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-start gap-2">
+                  <span className="w-5 shrink-0 pt-px text-xs text-zinc-500">{idx + 1}.</span>
                   <span className="text-sm text-zinc-200">{item.title}</span>
                 </div>
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'resolution' && (
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 pl-7 sm:pl-0">
                     <button onClick={() => openVote(item, 'open')}
-                      className="rounded px-2 py-1 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors">Głosuj jawnie</button>
+                      className="rounded-md px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors active:scale-95">Głosuj jawnie</button>
                     <button onClick={() => openVote(item, 'secret')}
-                      className="rounded px-2 py-1 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors">Głosuj tajnie</button>
+                      className="rounded-md px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors active:scale-95">Głosuj tajnie</button>
                   </div>
                 )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (
@@ -317,7 +289,7 @@ function VoteResults({ agendaItemId }: { agendaItemId: string }) {
           <ElectionResultRow vote={v} />
         </div>
       ) : (
-        <div key={v.id} className="flex items-center gap-3 text-xs pl-7">
+        <div key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs pl-7">
           <span className={clsx('rounded-full px-2 py-0.5 font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
             {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
           </span>
@@ -351,9 +323,9 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
             <ElectionResultRow vote={v} />
           </div>
         ) : (
-          <div key={v.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
-            <div className="text-sm text-zinc-300">{v.title}</div>
-            <div className="flex items-center gap-3">
+          <div key={v.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+            <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
+            <div className="flex shrink-0 items-center gap-3">
               <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}–{v.votes_against}–{v.votes_abstain}</span>
               <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
                 {VOTE_RESULT_LABEL[v.result ?? 'rejected']}

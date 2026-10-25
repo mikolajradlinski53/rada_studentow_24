@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { getOrgContext, getMyOrgs } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/sidebar';
 
 export default async function DashboardLayout({
   children,
@@ -28,22 +28,18 @@ export default async function DashboardLayout({
   const orgs = await getMyOrgs();
 
   return (
-    <div
-      className="flex h-screen flex-col bg-zinc-950 text-zinc-100 md:flex-row"
-      style={ctx.org.accent_color ? ({ ['--accent']: ctx.org.accent_color } as React.CSSProperties) : undefined}
+    <AppShell
+      accent={ctx.org.accent_color}
+      orgSlug={ctx.org.slug}
+      orgName={ctx.org.name}
+      organId={ctx.organId}
+      logoUrl={ctx.org.logo_url}
+      userName={profile?.full_name ?? user.email ?? ''}
+      role={ctx.role}
+      modules={ctx.org.enabled_modules}
+      orgs={orgs}
     >
-      <Sidebar
-        orgSlug={ctx.org.slug}
-        orgName={ctx.org.name}
-        logoUrl={ctx.org.logo_url}
-        userName={profile?.full_name ?? user.email ?? ''}
-        role={ctx.role}
-        modules={ctx.org.enabled_modules}
-        orgs={orgs}
-      />
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">{children}</div>
-      </main>
-    </div>
+      {children}
+    </AppShell>
   );
 }
