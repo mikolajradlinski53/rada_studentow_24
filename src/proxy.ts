@@ -36,6 +36,8 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/public') ||
     // Cron routes authenticate with CRON_SECRET themselves.
     request.nextUrl.pathname.startsWith('/api/cron/') ||
+    // Calendar feed: calendar apps send no cookies; the URL token is the credential.
+    request.nextUrl.pathname.startsWith('/api/calendar/') ||
     // Public resolution registry + transmission: /{orgSlug}/rejestr|transmisja[/...]
     /^\/[^/]+\/(rejestr|transmisja)(\/|$)/.test(request.nextUrl.pathname);
 

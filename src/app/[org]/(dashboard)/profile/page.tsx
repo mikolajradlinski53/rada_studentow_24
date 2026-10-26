@@ -5,6 +5,7 @@ import { getOrgContext, getMyOrgs } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { NotificationSettings } from '@/components/pwa/notification-toggle';
 import { ThemePicker } from '@/components/pwa/theme-picker';
+import { CalendarFeed } from '@/components/pwa/calendar-feed';
 import { LogoutButton, OrgSwitcher } from '@/components/ui/sidebar';
 import { ProfileForm } from './profile-form';
 import { PasswordForm } from '@/components/auth/password-form';
@@ -49,6 +50,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ org: s
         <h2 className="text-sm font-medium text-zinc-400">Aplikacja</h2>
         <NotificationSettings />
         <ThemePicker />
+        <CalendarFeed />
       </section>
 
       <section className="space-y-3">

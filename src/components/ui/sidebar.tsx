@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { BarChart3, CalendarDays, FileText, ShieldCheck, Settings, UserRound } from 'lucide-react';
+import { BarChart3, CalendarDays, FileText, ShieldCheck, Settings, UserRound, Vote } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Role, OrgModule } from '@/types/database';
 
@@ -22,6 +22,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { module: 'sessions', path: 'sessions', label: 'Posiedzenia', short: 'Posiedzenia', icon: CalendarDays, roles: null },
   { module: 'resolutions', path: 'resolutions', label: 'Uchwały', short: 'Uchwały', icon: FileText, roles: null },
+  { module: 'sessions', path: 'polls', label: 'Ankiety', short: 'Ankiety', icon: Vote, roles: null, desktopOnly: true },
   { module: 'sessions', path: 'stats', label: 'Frekwencja', short: 'Frekwencja', icon: BarChart3, roles: null, desktopOnly: true },
   { module: 'audit', path: 'audit', label: 'Logi', short: 'Logi', icon: ShieldCheck, roles: ['admin', 'chair', 'auditor'] },
   { module: null, path: 'admin', label: 'Administracja', short: 'Admin', icon: Settings, roles: ['admin'] },

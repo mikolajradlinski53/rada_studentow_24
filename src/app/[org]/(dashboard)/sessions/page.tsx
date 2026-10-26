@@ -2,7 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { BarChart3, CalendarPlus, ChevronRight, MapPin, Plus } from 'lucide-react';
+import { BarChart3, CalendarPlus, ChevronRight, MapPin, Plus, Vote } from 'lucide-react';
 import { getOrgContext } from '@/lib/org';
 import { plDay, plLong, plMonthShort, plRelativeDay, plTime, plWeekdayShort } from '@/lib/dates';
 import type { Session, SessionStatus } from '@/types/database';
@@ -20,6 +20,11 @@ const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string }> = {
 
 const UPCOMING: SessionStatus[] = ['in_progress', 'scheduled', 'draft'];
 
+function openOnly<T extends { closes_at: string | null }>(rows: T[]) {
+  const now = Date.now();
+  return rows.filter((p) => !p.closes_at || new Date(p.closes_at).getTime() > now);
+}
+
 export default async function SessionsPage({ params }: { params: Promise<{ org: string }> }) {
   const { org } = await params;
   const ctx = await getOrgContext(org);
@@ -34,6 +39,10 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
     .eq('organ_id', ctx.organId)
     .order('scheduled_at', { ascending: false });
   const sessions = (data as Session[]) ?? [];
+  const { data: pollRows } = await supabase
+    .from('polls').select('id, title, closes_at, closed_at').eq('term_id', ctx.termId).is('closed_at', null)
+    .order('created_at', { ascending: false });
+  const openPolls = openOnly((pollRows as { id: string; title: string; closes_at: string | null }[]) ?? []);
 
   // Members care about what's next: live first, then the nearest upcoming.
   const upcoming = sessions
@@ -54,6 +63,10 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
           <p className="mt-1 truncate text-sm text-zinc-500">{ctx.organShortName || ctx.org.name}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+        <Link href={`/${org}/polls`} aria-label="Ankiety"
+          className="press flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 md:hidden">
+          <Vote className="h-4 w-4" />
+        </Link>
         <Link href={`/${org}/stats`} aria-label="Frekwencja"
           className="press flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 md:hidden">
           <BarChart3 className="h-4 w-4" />
@@ -72,6 +85,20 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
       </div>
 
       <div className="mb-5 empty:hidden"><NotificationNudge /></div>
+
+      {openPolls.length > 0 && (
+        <Link href={`/${org}/polls`}
+          className="press mb-6 flex items-center gap-3 rounded-2xl border border-indigo-800/60 bg-indigo-950/25 px-4 py-3.5 hover:bg-indigo-950/40">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white"><Vote className="h-5 w-5" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-medium text-zinc-100">
+              {openPolls.length === 1 ? 'Trwa ankieta' : `Trwają ankiety: ${openPolls.length}`}
+            </div>
+            <div className="truncate text-[13px] text-zinc-400">{openPolls[0].title}</div>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
+        </Link>
+      )}
 
       {!sessions.length ? (
         <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-12 text-center">

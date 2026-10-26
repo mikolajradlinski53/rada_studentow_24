@@ -194,6 +194,11 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   **frekwencja** w kadencji (obecność + udział w głosowaniach, bez treści głosów),
   **wyszukiwarka uchwał** (aplikacja + rejestr publiczny) — 022.
 
+- **Ankiety** poza posiedzeniem (jeden/wiele wyborów, „bez nazwisk”, termin, zmiana
+  odpowiedzi do końca, push), **kalendarz kadencji** jako prywatna subskrypcja webcal — 023.
+- **Do decyzji**: uchwały obiegowe (głosowanie zdalne z terminem) — czy regulamin RUSS
+  przewiduje tryb obiegowy?
+
 ## 🗓️ Plan: odłożone (świadomie, z powodem)
 
 | Temat | Dlaczego później | Co trzeba |

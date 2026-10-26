@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 // The chair's client calls this right after opening a vote / session. Who may
 // broadcast, dedupe and recipient selection all live in the
 // claim_push_broadcast RPC (migration 014) — this route only signs and sends.
-type PushEvent = 'vote_opened' | 'session_opened';
+type PushEvent = 'vote_opened' | 'session_opened' | 'poll_opened';
 
 type Payload = PushPayload;
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Brak autoryzacji.' }, { status: 401 });
 
   const { event, id } = (await request.json().catch(() => ({}))) as { event?: PushEvent; id?: string };
-  if ((event !== 'vote_opened' && event !== 'session_opened') || typeof id !== 'string') {
+  if (!event || !['vote_opened', 'session_opened', 'poll_opened'].includes(event) || typeof id !== 'string') {
     return NextResponse.json({ error: 'Niepoprawne dane wejściowe.' }, { status: 400 });
   }
 
@@ -57,6 +57,19 @@ async function buildPayload(
   event: PushEvent,
   id: string
 ): Promise<Payload | null> {
+  if (event === 'poll_opened') {
+    const { data: poll } = await supabase
+      .from('polls').select('title, closes_at, term:terms(organ:organs(org:organizations(slug)))').eq('id', id).maybeSingle();
+    if (!poll) return null;
+    const slug = (poll as { term?: { organ?: { org?: { slug?: string } } } }).term?.organ?.org?.slug;
+    return {
+      title: '📊 Nowa ankieta',
+      body: poll.title,
+      url: slug ? `/${slug}/polls` : '/',
+      tag: `poll-${id}`,
+    };
+  }
+
   let sessionId = id;
   let vote: { title: string; vote_kind: string | null; vote_type: string } | null = null;
 

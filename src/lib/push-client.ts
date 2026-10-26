@@ -122,7 +122,7 @@ export async function syncPush() {
  * Chair-side: notify the organ's members' devices. Fire-and-forget — a push
  * failure must never block opening a vote. The server dedupes per target.
  */
-export function broadcastPush(event: 'vote_opened' | 'session_opened', id: string) {
+export function broadcastPush(event: 'vote_opened' | 'session_opened' | 'poll_opened', id: string) {
   fetch('/api/push', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

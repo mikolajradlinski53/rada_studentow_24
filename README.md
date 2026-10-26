@@ -110,6 +110,8 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 020_rsvp_speech_timer.sql — „będę / nie będę”, limit czasu wypowiedzi
 021_chair_turnout.sql — prowadzący widzi, kto już zagłosował (nie jak)
 022_agenda_comments_term_stats.sql — pytania do punktów, frekwencja w kadencji
+023_polls_calendar_feed.sql — ankiety, prywatny kalendarz (webcal), push o ankiecie
+024_superadmin_policies.sql — superadmin tworzy posiedzenia i czyta logi
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy
