@@ -102,6 +102,8 @@ export interface Session {
   opened_at: string | null;
   closed_at: string | null;
   on_break_until: string | null;
+  /** Per-turn speaking limit; null = no limit (migration 020). */
+  speech_limit_seconds?: number | null;
   attendance_mode: AttendanceMode;
   stream_url: string | null;
   status: SessionStatus;
@@ -219,6 +221,8 @@ export interface FloorRequest {
   ended_at: string | null;
   // Joined
   mandate?: Mandate & { profile?: Profile };
+  /** Extra speaking time granted to this turn (migration 020). */
+  extra_seconds?: number;
 }
 
 export interface Resolution {
@@ -275,4 +279,13 @@ export interface QuorumInfo {
   present: number;
   required: number;
   has_quorum: boolean;
+}
+
+export type RsvpStatus = 'yes' | 'no';
+export interface SessionRsvp {
+  session_id: string;
+  mandate_id: string;
+  status: RsvpStatus;
+  note: string | null;
+  updated_at: string;
 }

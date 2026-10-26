@@ -184,6 +184,12 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   i kadencja (sygnatury uchwał).
 - **Strefa czasowa**: wszystkie daty w czasie polskim (016 + Europe/Warsaw na serwerze).
 
+- **Przed posiedzeniem**: „Będę / nie będę” + usprawiedliwienie, prognoza kworum, lista
+  dla prowadzącego, podpowiedź w liście obecności (020); **plik .ics** do kalendarza.
+- **W trakcie**: limit czasu wypowiedzi z licznikiem (panel + rzutnik), „+1 min”,
+  „przedłużenie czasu” dodaje minuty mówcy; **kto jeszcze nie zagłosował** dla
+  prowadzącego (tajne: tylko fakt oddania głosu, 021).
+
 ## 🗓️ Plan: odłożone (świadomie, z powodem)
 
 | Temat | Dlaczego później | Co trzeba |
@@ -194,7 +200,6 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
 | Generowany PDF po stronie serwera + e-podpis | dziś PDF z przeglądarki wystarcza | headless Chrome / @react-pdf, kwalifikowany podpis (zewn. dostawca) |
 | Druga tura / próg w wyborach | reguły zależą od regulaminu | konfiguracja progu per-organ, „Ogłoś II turę” z top-N |
 | Wybory jawne/imienne | rzadkie | wariant `vote_type=open` dla `election` |
-| Timer „przedłużenia czasu” | brak limitu czasu wypowiedzi w systemie | najpierw limit wypowiedzi w kolejce mówców |
 | Napisy na żywo (streaming STT) | wymaga GPU / płatnego API | Deepgram/WhisperLive; batch Whisper już jest |
 | Nakładki na publicznej transmisji | wymaga publicznego odczytu agendy/głosowań | anon RLS na wybrane pola |
 | Filtr logów po posiedzeniu, logi obecności | kosmetyka | `target_id` sesji w metadata |

@@ -2,13 +2,14 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { CalendarDays, ChevronLeft, FileText, MapPin, Radio, ScrollText, Users } from 'lucide-react';
+import { CalendarDays, CalendarPlus, ChevronLeft, FileText, MapPin, Radio, ScrollText, Users } from 'lucide-react';
 import { AgendaEditor } from '@/components/session/agenda-editor';
 import { StartSessionButtonClient } from '@/components/session/start-session-button';
 import { CreateResolutionButton } from '@/components/session/create-resolution-button';
 import { getOrgContext } from '@/lib/org';
 import { plLong } from '@/lib/dates';
-import type { SessionStatus } from '@/types/database';
+import type { SessionRsvp, SessionStatus } from '@/types/database';
+import { SessionRsvpCard } from '@/components/session/session-rsvp';
 
 const STATUS: Record<SessionStatus, { label: string; tone: string }> = {
   draft: { label: 'Szkic', tone: 'bg-zinc-800 text-zinc-400' },
@@ -34,7 +35,7 @@ export default async function SessionDetailPage({
     .from('sessions')
     .select(`
       *,
-      organ:organs(name, short_name, total_seats),
+      organ:organs(name, short_name, total_seats, quorum_type, quorum_value),
       term:terms(label),
       chair_profile:profiles!sessions_chaired_by_fkey(full_name)
     `)
@@ -44,11 +45,13 @@ export default async function SessionDetailPage({
 
   if (!session) notFound();
 
-  const [{ data: agendaItems }, { data: passedVotes }, { data: resolutions }, { data: { user } }] = await Promise.all([
+  const [{ data: agendaItems }, { data: passedVotes }, { data: resolutions }, { data: { user } }, { data: rsvps }, { data: roster }] = await Promise.all([
     supabase.from('agenda_items').select('*, attachments:agenda_attachments(*)').eq('session_id', id).order('position'),
     supabase.from('votes').select('id, title').eq('session_id', id).eq('status', 'closed').eq('result', 'passed').order('closed_at'),
     supabase.from('resolutions').select('id, vote_id, signature, title, status').eq('session_id', id),
     supabase.auth.getUser(),
+    supabase.from('session_rsvps').select('*').eq('session_id', id),
+    supabase.from('mandates').select('id, role, profile:profiles(full_name)').eq('term_id', session.term_id).eq('is_active', true),
   ]);
 
   const resByVote = new Map((resolutions ?? []).map((r) => [r.vote_id, r]));
@@ -57,6 +60,18 @@ export default async function SessionDetailPage({
   const isLive = session.status === 'in_progress';
   const showProtocol = canManage || ctx.role === 'secretary' || ['protocol_pending', 'closed', 'archived'].includes(session.status);
   const status = STATUS[session.status as SessionStatus];
+  const upcoming = session.status === 'scheduled' || session.status === 'draft';
+
+  // Voting members: Komisja Rewizyjna, SKW and system admins aren't seats in the organ.
+  const voters = ((roster as unknown as { id: string; role: string; profile: { full_name: string } | null }[]) ?? [])
+    .filter((m) => !['auditor', 'election_committee', 'admin'].includes(m.role))
+    .map((m) => ({ mandateId: m.id, name: m.profile?.full_name ?? '-' }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+  const organQ = (session as { organ?: { total_seats?: number; quorum_type?: string; quorum_value?: number | null } }).organ;
+  const seats = organQ?.total_seats ?? voters.length;
+  const required = organQ?.quorum_type === 'two_thirds' ? Math.ceil((seats * 2) / 3)
+    : organQ?.quorum_type === 'custom' && organQ.quorum_value ? Number(organQ.quorum_value)
+    : Math.floor(seats / 2) + 1;
 
   const organ = (session as { organ?: { short_name?: string; total_seats?: number } }).organ;
   const term = (session as { term?: { label?: string } }).term?.label;
@@ -91,6 +106,13 @@ export default async function SessionDetailPage({
           {chair && <Meta icon={Radio} label="Prowadzi">{chair}</Meta>}
         </dl>
 
+        <div className="mt-3">
+          <a href={`/api/sessions/${session.id}/ics`}
+            className="press inline-flex h-10 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[13px] font-medium text-zinc-200 hover:border-zinc-500">
+            <CalendarPlus className="h-4 w-4" /> Dodaj do kalendarza
+          </a>
+        </div>
+
         {(canStart || isLive || showProtocol) && (
           <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
             {canStart && <StartSessionButtonClient sessionId={session.id} org={org} />}
@@ -109,6 +131,14 @@ export default async function SessionDetailPage({
           </div>
         )}
       </div>
+
+      {upcoming && (
+        <section className="mb-8">
+          <h2 className="mb-2.5 text-[13px] font-medium uppercase tracking-wide text-zinc-500">Obecność</h2>
+          <SessionRsvpCard sessionId={session.id} myMandateId={ctx.mandateId} canManage={canManage}
+            roster={voters} required={required} initial={(rsvps as SessionRsvp[]) ?? []} />
+        </section>
+      )}
 
       {/* Agenda */}
       <section>

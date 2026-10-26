@@ -12,6 +12,7 @@ import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/
 import { Transmission } from '@/components/session/transmission';
 import { MotionVoteCard } from '@/components/session/motion-vote';
 import { AgendaMaterials } from '@/components/session/agenda-materials';
+import { PendingVoters } from '@/components/session/pending-voters';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Check } from 'lucide-react';
@@ -226,6 +227,11 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
               onCast={castBallot}
               onClose={closeVote}
             />
+          )}
+          {isChair && (
+            <div className="mt-3">
+              <PendingVoters vote={activeVote} attendance={attendance} openBallots={openVoteBallots} />
+            </div>
           )}
         </div>
       )}

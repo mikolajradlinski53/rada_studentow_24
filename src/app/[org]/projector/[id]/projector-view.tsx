@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useLiveSession, tallyOf, fetchElectionResults } from '@/lib/use-live-session';
 import { TallyBar, VOTE_RESULT_LABEL } from '@/components/session/tally';
 import { useCountdown } from '@/components/session/break-banner';
+import { SpeakerTimer } from '@/components/session/speaker-timer';
 import type { Vote, ElectionResult } from '@/types/database';
 
 const RESULT_STAGE: Record<NonNullable<Vote['result']>, string> = {
@@ -190,6 +191,12 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
             <Mic className="mx-auto h-12 w-12 text-indigo-300" />
             <Kicker tone="text-indigo-300 mt-4">Głos ma</Kicker>
             <div className="mt-4 text-8xl font-semibold tracking-tight">{speaker.mandate?.profile?.full_name ?? '-'}</div>
+            {session.speech_limit_seconds ? (
+              <div className="mt-8">
+                <SpeakerTimer calledAt={speaker.called_at} limitSeconds={session.speech_limit_seconds}
+                  extraSeconds={speaker.extra_seconds ?? 0} size="lg" />
+              </div>
+            ) : null}
             {queue.length > 0 && (
               <div className="mt-14">
                 <div className="text-lg uppercase tracking-[0.2em] text-zinc-500">Następni</div>

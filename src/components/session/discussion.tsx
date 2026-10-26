@@ -6,6 +6,7 @@ import { Hand } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { broadcastPush } from '@/lib/push-client';
 import { enactMotion } from '@/lib/motions';
+import { SpeakerTimer } from './speaker-timer';
 import type { FloorRequest, FormalMotionType, Mandate, Session } from '@/types/database';
 import { BreakBanner } from './break-banner';
 
@@ -53,7 +54,6 @@ export function Discussion({
   const now = () => new Date().toISOString();
   const live = session.status === 'in_progress';
   const myReq = floorRequests.find((r) => r.mandate_id === myMandate?.id);
-  const speaker = floorRequests.find((r) => r.status === 'speaking') ?? null;
 
   // === actions ===
   const request = async (kind: FloorRequest['kind'], opts?: { formal_type?: FormalMotionType; minutes?: number; note?: string }) => {
@@ -73,6 +73,12 @@ export function Discussion({
     await supabase.from('floor_requests').update({ status: 'speaking', called_at: now() }).eq('id', id);
   };
   const endSpeaker = async (id: string) => { await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('id', id); };
+  const setLimit = async (seconds: number) => {
+    await supabase.from('sessions').update({ speech_limit_seconds: seconds || null }).eq('id', sessionId);
+  };
+  const addTime = async (r: FloorRequest, seconds: number) => {
+    await supabase.from('floor_requests').update({ extra_seconds: Math.min(3600, (r.extra_seconds ?? 0) + seconds) }).eq('id', r.id);
+  };
   const reject = async (id: string) => { await supabase.from('floor_requests').update({ status: 'rejected' }).eq('id', id); };
   const acceptMotion = (r: FloorRequest) => enactMotion(supabase, sessionId, r);
   // Turn a formal motion into a quick open procedural vote. The vote remembers
@@ -101,13 +107,20 @@ export function Discussion({
     <div className="space-y-3">
       <BreakBanner session={session} isChair={isChair} sessionId={sessionId} />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-[13px] font-medium uppercase tracking-wide text-zinc-500">Dyskusja</h2>
-        {speaker && (
-          <span className="text-xs text-indigo-300">
-            Głos ma: <span className="font-medium">{speaker.mandate?.profile?.full_name ?? '-'}</span>
-          </span>
-        )}
+        {isChair ? (
+          <label className="flex items-center gap-2 text-[13px] text-zinc-400">
+            Limit wypowiedzi
+            <select value={session.speech_limit_seconds ?? 0} onChange={(e) => setLimit(Number(e.target.value))}
+              className="h-9 rounded-xl border border-zinc-700 bg-zinc-800/80 px-2.5 text-[14px] text-zinc-100 outline-none focus:border-indigo-500">
+              <option value={0}>bez limitu</option>
+              {[60, 120, 180, 300, 600].map((s) => <option key={s} value={s}>{s / 60} min</option>)}
+            </select>
+          </label>
+        ) : session.speech_limit_seconds ? (
+          <span className="text-[13px] text-zinc-500">Limit wypowiedzi: {session.speech_limit_seconds / 60} min</span>
+        ) : null}
       </div>
 
       {/* Member request controls */}
@@ -174,8 +187,11 @@ export function Discussion({
                   <span className="w-4 shrink-0 text-xs text-zinc-600 tabular-nums">{idx + 1}</span>
                   <div className="min-w-0">
                     <div className="truncate text-[15px] text-zinc-100">{r.mandate?.profile?.full_name ?? '-'}</div>
-                    <div className={clsx('text-[13px]', isFormal ? 'text-amber-400' : isSpeaking ? 'text-indigo-300' : 'text-zinc-500')}>
-                      {isSpeaking ? 'Głos ma' : reqLabel(r)}{r.note ? ` · ${r.note}` : ''}
+                    <div className={clsx('flex flex-wrap items-center gap-2 text-[13px]', isFormal ? 'text-amber-400' : isSpeaking ? 'text-indigo-300' : 'text-zinc-500')}>
+                      <span>{isSpeaking ? 'Głos ma' : reqLabel(r)}{r.note ? ` · ${r.note}` : ''}</span>
+                      {isSpeaking && (
+                        <SpeakerTimer calledAt={r.called_at} limitSeconds={session.speech_limit_seconds} extraSeconds={r.extra_seconds ?? 0} />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -183,7 +199,12 @@ export function Discussion({
                 {isChair && (
                   <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     {isSpeaking ? (
-                      <button onClick={() => endSpeaker(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors">Zakończ</button>
+                      <>
+                        {session.speech_limit_seconds ? (
+                          <button onClick={() => addTime(r, 60)} className="press h-9 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-200 hover:border-zinc-500">+1 min</button>
+                        ) : null}
+                        <button onClick={() => endSpeaker(r.id)} className="press h-9 rounded-xl px-3 text-[13px] font-medium bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors">Zakończ</button>
+                      </>
                     ) : isFormal ? (
                       <>
                         {canOpenVote && (

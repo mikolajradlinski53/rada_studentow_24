@@ -1,10 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { toCsv, downloadCsv } from '@/lib/csv';
-import type { AttendanceMode, AttendanceStatus } from '@/types/database';
+import type { AttendanceMode, AttendanceStatus, SessionRsvp } from '@/types/database';
 import type { MandateWithProfile, AttendanceWithMandate } from '@/lib/use-live-session';
 
 const OPTIONS: { value: AttendanceStatus; label: string; tone: string }[] = [
@@ -30,6 +31,13 @@ export function RollCall({
 }) {
   const supabase = createClient();
   const statusBy = new Map(attendance.map((a) => [a.mandate_id, a.status]));
+
+  // Pre-sitting "nie będę" answers - shown as a hint so the chair can mark excused in one tap.
+  const [declined, setDeclined] = useState<Map<string, string | null>>(new Map());
+  useEffect(() => {
+    createClient().from('session_rsvps').select('mandate_id, status, note').eq('session_id', sessionId).eq('status', 'no')
+      .then(({ data }) => setDeclined(new Map(((data as Pick<SessionRsvp, 'mandate_id' | 'note'>[]) ?? []).map((r) => [r.mandate_id, r.note]))));
+  }, [sessionId]);
   const attBy = new Map(attendance.map((a) => [a.mandate_id, a]));
 
   const set = async (mandateId: string, status: AttendanceStatus) => {
@@ -86,7 +94,14 @@ export function RollCall({
           const current = statusBy.get(m.id) ?? 'absent';
           return (
             <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3 py-2.5">
-              <span className="min-w-0 truncate text-[15px] text-zinc-100">{m.profile?.full_name ?? '-'}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-[15px] text-zinc-100">{m.profile?.full_name ?? '-'}</span>
+                {declined.has(m.id) && (
+                  <span className="block truncate text-[12px] text-amber-400">
+                    Zgłosił(a) nieobecność{declined.get(m.id) ? `: ${declined.get(m.id)}` : ''}
+                  </span>
+                )}
+              </span>
               <div className="flex flex-wrap gap-1">
                 {OPTIONS.map((o) => (
                   <button key={o.value} onClick={() => set(m.id, o.value)}
