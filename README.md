@@ -114,6 +114,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 024_superadmin_policies.sql — superadmin tworzy posiedzenia i czyta logi
 025_circular_votes.sql — głosowania obiegowe (termin, kworum z oddanych głosów), głos tylko z mandatu kadencji
 026_stats_circular.sql — frekwencja: obiegowe liczą się do udziału w głosowaniach
+027_secret_ballot_counters.sql — głosy tajne i wybory tylko jako niewidoczne liczniki (bez pojedynczych głosów)
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

@@ -34,18 +34,19 @@ export interface LiveSessionData {
   refetch: () => Promise<void>;
 }
 
-/** Per-candidate tally for an election vote (top `seats` marked elected). */
+/**
+ * Per-candidate results of a CLOSED election (top `seats` marked elected).
+ * Counts come from election_results(): per-voter choices aren't stored at all
+ * (migration 027), and nothing is released while the election is open.
+ */
 export async function fetchElectionResults(supabase: SupabaseClient, vote: Vote): Promise<ElectionResult[]> {
-  const [{ data: cands }, { data: ballots }] = await Promise.all([
+  const [{ data: cands }, { data: counts }] = await Promise.all([
     supabase.from('vote_candidates').select('*').eq('vote_id', vote.id).order('position'),
-    supabase.from('election_ballots').select('candidate_id').eq('vote_id', vote.id),
+    supabase.rpc('election_results', { p_vote_id: vote.id }),
   ]);
-  const counts = new Map<string, number>();
-  for (const b of (ballots as { candidate_id: string }[]) ?? []) {
-    counts.set(b.candidate_id, (counts.get(b.candidate_id) ?? 0) + 1);
-  }
+  const byId = new Map(((counts as { candidate_id: string; votes: number }[]) ?? []).map((r) => [r.candidate_id, r.votes]));
   const ranked = ((cands as VoteCandidate[]) ?? [])
-    .map((c) => ({ candidate: c, count: counts.get(c.id) ?? 0 }))
+    .map((c) => ({ candidate: c, count: byId.get(c.id) ?? 0 }))
     .sort((a, b) => b.count - a.count);
   const electedIds = new Set(ranked.slice(0, vote.seats).filter((r) => r.count > 0).map((r) => r.candidate.id));
   return ranked.map((r) => ({ ...r, elected: electedIds.has(r.candidate.id) }));
@@ -196,7 +197,6 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'election_ballots' }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [sessionId, supabase, refetch]);
