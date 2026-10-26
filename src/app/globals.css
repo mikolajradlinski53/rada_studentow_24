@@ -49,6 +49,34 @@ button, a, [role="button"], input, select, textarea, label {
   touch-action: manipulation;
 }
 
+/* Grid/flex children default to min-width:auto (= their content), so a wide
+   control blows out its column and overlaps the neighbour. Let them shrink. */
+@layer base {
+  .grid > * { min-width: 0; }
+}
+
+/* iOS/WebKit date & time inputs ignore width and keep an intrinsic min-width
+   (~ the formatted value + picker icon), overlapping the next column in a
+   2-up grid ("Od" / "Do"). Reset to a plain, shrinkable box. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+select { min-width: 0; max-width: 100%; }
+
 /* iOS zooms into inputs below 16px — keep form fields at 16px on phones. */
 @media (max-width: 767px) {
   input, select, textarea { font-size: 16px !important; }
