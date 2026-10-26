@@ -34,6 +34,10 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
+  // App, not a document: no pinch-zoom / zoom-out (prevents the page "floating"
+  // sideways on phones). Text stays >= 16px in inputs so iOS never auto-zooms.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover", // lets the app paint under the notch; layouts pad with safe-area insets
 };
 

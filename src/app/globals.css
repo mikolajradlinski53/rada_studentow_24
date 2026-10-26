@@ -30,6 +30,14 @@
   }
 }
 
+html, body {
+  /* Nothing may push the app sideways: horizontal overflow is clipped, and
+     touch gestures pan vertically only (no sideways drift, no pinch-zoom). */
+  overflow-x: clip;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;

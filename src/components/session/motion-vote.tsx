@@ -43,17 +43,17 @@ export function MotionVoteCard({
   };
 
   return (
-    <div className="rounded-xl border-2 border-indigo-600 bg-indigo-950/20 p-4 sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-          <h2 className="text-sm font-medium text-indigo-300">
-            Głosowanie {vote.vote_type === 'secret' ? 'tajne' : 'jawne'} · na żywo
+    <div className="rounded-2xl border-2 border-indigo-600 bg-indigo-950/20 p-4 sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="h-2 w-2 shrink-0 rounded-full bg-indigo-400 animate-pulse" />
+          <h2 className="truncate text-[13px] font-semibold uppercase tracking-wide text-indigo-300">
+            Głosowanie {vote.vote_type === 'secret' ? 'tajne' : 'jawne'}
           </h2>
         </div>
-        <span className="text-xs tabular-nums text-zinc-400">oddano {tally.cast} / {presentCount}</span>
+        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{tally.cast} / {presentCount} głosów</span>
       </div>
-      <p className="mb-4 text-base font-medium text-zinc-100">{vote.title}</p>
+      <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{vote.title.replace(/^Głosowanie:\s*/i, '')}</p>
 
       {/* Live tally */}
       {vote.vote_type === 'open' ? (

@@ -23,21 +23,21 @@ export function ProfileForm({ org, initialName, email }: { org: string; initialN
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-1 block text-xs text-zinc-400">Imię i nazwisko</label>
+        <label className="mb-2 block px-1 text-[13px] font-medium text-zinc-400">Imię i nazwisko</label>
         <input value={name} onChange={(e) => { setName(e.target.value); setSaved(false); }}
           placeholder="Jan Kowalski"
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
-        <p className="mt-1 text-xs text-zinc-600">Ta nazwa jest widoczna m.in. na liście obecności i przy głosowaniach jawnych.</p>
+          className="h-12 w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 text-[16px] text-zinc-100 placeholder-zinc-600 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" />
+        <p className="mt-1.5 px-1 text-[12px] text-zinc-500">Ta nazwa jest widoczna m.in. na liście obecności i przy głosowaniach jawnych.</p>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-zinc-400">Email</label>
+        <label className="mb-2 block px-1 text-[13px] font-medium text-zinc-400">Email</label>
         <input value={email} disabled
-          className="w-full cursor-not-allowed rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-500" />
+          className="h-12 w-full cursor-not-allowed rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-[16px] text-zinc-500" />
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}
       <div className="flex items-center gap-2">
         <button disabled={isPending} onClick={save}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
+          className="press h-11 rounded-xl bg-indigo-600 px-5 text-[15px] font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
           {isPending ? 'Zapisywanie…' : 'Zapisz'}
         </button>
         {saved && <span className="text-xs text-emerald-400">Zapisano</span>}

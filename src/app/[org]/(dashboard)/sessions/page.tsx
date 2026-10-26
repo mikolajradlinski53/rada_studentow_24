@@ -62,15 +62,6 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
           <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Posiedzenia</h1>
           <p className="mt-1 truncate text-sm text-zinc-500">{ctx.organShortName || ctx.org.name}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-        <Link href={`/${org}/polls`} aria-label="Ankiety"
-          className="press flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 md:hidden">
-          <Vote className="h-4 w-4" />
-        </Link>
-        <Link href={`/${org}/stats`} aria-label="Frekwencja"
-          className="press flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 md:hidden">
-          <BarChart3 className="h-4 w-4" />
-        </Link>
         {canCreate && (
           <Link
             href={`/${org}/sessions/new`}
@@ -81,7 +72,18 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
             <span className="sm:hidden">Nowe</span><span className="hidden sm:inline">Nowe posiedzenie</span>
           </Link>
         )}
-        </div>
+      </div>
+
+      {/* Phone: secondary sections as labelled shortcuts (the tab bar holds max 5). */}
+      <div className="-mt-2 mb-5 flex gap-2 md:hidden">
+        <Link href={`/${org}/polls`}
+          className="press inline-flex h-9 items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 px-3.5 text-[13px] font-medium text-zinc-200">
+          <Vote className="h-3.5 w-3.5 text-indigo-300" /> Ankiety
+        </Link>
+        <Link href={`/${org}/stats`}
+          className="press inline-flex h-9 items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 px-3.5 text-[13px] font-medium text-zinc-200">
+          <BarChart3 className="h-3.5 w-3.5 text-indigo-300" /> Frekwencja
+        </Link>
       </div>
 
       <div className="mb-5 empty:hidden"><NotificationNudge /></div>

@@ -37,7 +37,7 @@ export function ThemePicker() {
       <div role="radiogroup" aria-label="Motyw" className="mt-3 grid grid-cols-3 rounded-xl bg-zinc-950/60 p-1 ring-1 ring-zinc-800">
         {OPTIONS.map(({ value, label, Icon }) => (
           <button key={value} role="radio" aria-checked={current === value} onClick={() => pick(value)}
-            className={clsx('flex h-10 items-center justify-center gap-1.5 rounded-lg text-[14px] font-medium transition-colors',
+            className={clsx('flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg text-[12px] font-medium transition-colors',
               current === value ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
             <Icon className="h-4 w-4" /> {label}
           </button>

@@ -16,7 +16,7 @@ import { PendingVoters } from '@/components/session/pending-voters';
 import { AgendaComments } from '@/components/session/agenda-comments';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check } from 'lucide-react';
+import { Check, MonitorUp, Square } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import { settleMotionVote } from '@/lib/motions';
@@ -136,26 +136,26 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
-          <h1 className="truncate text-lg font-semibold text-zinc-100">{session.title}</h1>
+      {/* Header: full title on top, actions below (never squeezed side by side on a phone) */}
+      <div>
+        <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide text-emerald-400">
+          <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" /> Posiedzenie trwa
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <h1 className="mt-1.5 text-[20px] font-semibold leading-snug tracking-tight text-zinc-50 [overflow-wrap:anywhere]">{session.title}</h1>
+        <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href={`/${org}/projector/${sessionId}`}
             target="_blank"
-            className="rounded-xl border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+            className="press inline-flex h-10 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[14px] font-medium text-zinc-200 hover:border-zinc-500"
           >
-            <span className="hidden sm:inline">Widok rzutnikowy</span><span className="sm:hidden">Rzutnik</span> ↗
+            <MonitorUp className="h-4 w-4" /> Widok rzutnika
           </Link>
           {isChair && session.status === 'in_progress' && (
             <button
               onClick={closeSession}
-              className="rounded-xl border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors"
+              className="press inline-flex h-10 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[14px] font-medium text-zinc-300 hover:border-red-800 hover:text-red-400"
             >
-              <span className="hidden sm:inline">Zamknij posiedzenie</span><span className="sm:hidden">Zamknij</span>
+              <Square className="h-3.5 w-3.5" /> Zamknij posiedzenie
             </button>
           )}
         </div>

@@ -132,7 +132,7 @@ export function AppShell({ children, accent, ...props }: SidebarProps & { childr
         </div>
       </header>
 
-      <main className="pl-safe pr-safe flex-1 overflow-y-auto overscroll-contain print:overflow-visible print:p-0">
+      <main className="pl-safe pr-safe min-w-0 flex-1 overflow-y-auto overflow-x-clip overscroll-contain print:overflow-visible print:p-0">
         <div className="mx-auto max-w-5xl px-4 py-5 md:px-6 md:py-8 print:max-w-none print:p-0">{children}</div>
       </main>
 
@@ -165,7 +165,7 @@ function MobileTabBar({ orgSlug, role, modules, liveId }: Pick<SidebarProps, 'or
               href={href}
               aria-current={active ? 'page' : undefined}
               className={clsx(
-                'relative flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:scale-95',
+                'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10.5px] font-medium transition-colors active:scale-95',
                 active ? 'text-zinc-50' : 'text-zinc-500'
               )}
             >
@@ -175,7 +175,7 @@ function MobileTabBar({ orgSlug, role, modules, liveId }: Pick<SidebarProps, 'or
               >
                 <Icon className="h-[19px] w-[19px]" />
               </span>
-              {item.short}
+              <span className="max-w-full truncate px-0.5">{item.short}</span>
               {item.path === 'sessions' && liveId && (
                 <span className="absolute right-[calc(50%-18px)] top-2.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-zinc-950" />
               )}

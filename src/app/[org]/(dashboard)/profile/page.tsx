@@ -84,7 +84,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ org: s
               <OrgSwitcher orgSlug={org} orgs={orgs} className="mt-0 py-2 text-sm" />
             </div>
           )}
-          <LogoutButton className="w-full rounded-2xl border border-zinc-700 py-2.5 text-sm text-zinc-300 transition-colors hover:border-red-900 hover:text-red-400" />
+          <LogoutButton className="press h-12 w-full rounded-xl border border-zinc-700 text-[15px] text-zinc-300 hover:border-red-900 hover:text-red-400" />
         </div>
       </section>
     </div>

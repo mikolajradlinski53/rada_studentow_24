@@ -110,12 +110,14 @@ export function ElectionActive({
 
   return (
     <div className="rounded-2xl border-2 border-amber-600 bg-amber-950/20 p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-          <h2 className="text-sm font-medium text-amber-300">Wybory · na żywo · {vote.seats} {vote.seats === 1 ? 'miejsce' : 'miejsca/miejsc'}</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="h-2 w-2 shrink-0 rounded-full bg-amber-400 animate-pulse" />
+          <h2 className="truncate text-[13px] font-semibold uppercase tracking-wide text-amber-300">
+            Wybory · {vote.seats} {vote.seats === 1 ? 'miejsce' : vote.seats < 5 ? 'miejsca' : 'miejsc'}
+          </h2>
         </div>
-        <span className="text-xs tabular-nums text-zinc-400">oddano {vote.secret_cast_count} / {presentCount}</span>
+        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{vote.secret_cast_count} / {presentCount} głosów</span>
       </div>
       <p className="mb-4 text-base font-medium text-zinc-100">{vote.title}</p>
 

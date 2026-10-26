@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
+import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { AttendanceMode, AttendanceStatus, SessionRsvp } from '@/types/database';
 import type { MandateWithProfile, AttendanceWithMandate } from '@/lib/use-live-session';
 
-const OPTIONS: { value: AttendanceStatus; label: string; tone: string }[] = [
-  { value: 'present', label: 'Obecny', tone: 'bg-emerald-600 text-white' },
-  { value: 'late', label: 'Spóźniony', tone: 'bg-amber-600 text-white' },
-  { value: 'excused', label: 'Usprawiedliwiony', tone: 'bg-zinc-600 text-white' },
-  { value: 'left_early', label: 'Wyszedł', tone: 'bg-orange-700 text-white' },
-  { value: 'absent', label: 'Nieobecny', tone: 'bg-red-700 text-white' },
+const OPTIONS: { value: AttendanceStatus; label: string; short: string; tone: string }[] = [
+  { value: 'present', label: 'Obecny', short: 'Obecny', tone: 'bg-emerald-600 text-white' },
+  { value: 'late', label: 'Spóźniony', short: 'Spóźn.', tone: 'bg-amber-600 text-white' },
+  { value: 'excused', label: 'Usprawiedliwiony', short: 'Uspraw.', tone: 'bg-zinc-600 text-white' },
+  { value: 'left_early', label: 'Wyszedł wcześniej', short: 'Wyszedł', tone: 'bg-orange-700 text-white' },
+  { value: 'absent', label: 'Nieobecny', short: 'Nieob.', tone: 'bg-red-700 text-white' },
 ];
 
 const STATUS_PL: Record<AttendanceStatus, string> = {
@@ -67,57 +68,60 @@ export function RollCall({
     downloadCsv(`obecnosc-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows));
   };
 
+  const presentN = sorted.filter((m) => ['present', 'late'].includes(statusBy.get(m.id) ?? 'absent')).length;
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[15px] font-semibold text-zinc-100">Lista obecności</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={exportCsv}
-            className="press h-9 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors">
-            Eksport CSV
-          </button>
-          <div className="flex items-center gap-1 rounded-xl border border-zinc-700 p-0.5 text-xs">
-            <button onClick={() => setMode('chair')}
-              className={clsx('h-8 rounded-lg px-3 text-[13px] transition-colors', mode === 'chair' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
-              Prowadzący
-            </button>
-            <button onClick={() => setMode('self')}
-              className={clsx('h-8 rounded-lg px-3 text-[13px] transition-colors', mode === 'self' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200')}>
-              Samodzielnie
-            </button>
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[15px] font-semibold text-zinc-100">
+          Lista obecności <span className="font-normal tabular-nums text-zinc-500">· {presentN}/{sorted.length}</span>
+        </h2>
+        <button onClick={exportCsv} aria-label="Eksportuj listę obecności (CSV)"
+          className="press flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:border-zinc-500">
+          <Download className="h-3.5 w-3.5" /> CSV
+        </button>
       </div>
 
-      <div className="space-y-1.5">
+      <div role="radiogroup" aria-label="Kto zaznacza obecność" className="mt-3 grid grid-cols-2 rounded-xl bg-zinc-950/60 p-1 ring-1 ring-zinc-800">
+        {([['chair', 'Prowadzący'], ['self', 'Radni sami']] as const).map(([v, l]) => (
+          <button key={v} role="radio" aria-checked={mode === v} onClick={() => setMode(v)}
+            className={clsx('h-9 rounded-lg text-[13px] font-medium transition-colors',
+              mode === v ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 space-y-1.5">
         {sorted.map((m) => {
           const current = statusBy.get(m.id) ?? 'absent';
           return (
-            <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3 py-2.5">
-              <span className="min-w-0">
-                <span className="block truncate text-[15px] text-zinc-100">{m.profile?.full_name ?? '-'}</span>
+            <div key={m.id} className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <div className="truncate text-[15px] text-zinc-100">{m.profile?.full_name ?? '-'}</div>
                 {declined.has(m.id) && (
-                  <span className="block truncate text-[12px] text-amber-400">
+                  <div className="truncate text-[12px] text-amber-400">
                     Zgłosił(a) nieobecność{declined.get(m.id) ? `: ${declined.get(m.id)}` : ''}
-                  </span>
+                  </div>
                 )}
-              </span>
-              <div className="flex flex-wrap gap-1">
+              </div>
+              <div role="radiogroup" aria-label={`Status: ${m.profile?.full_name ?? ''}`} className="mt-2 grid grid-cols-3 gap-1 min-[400px]:grid-cols-5">
                 {OPTIONS.map((o) => (
-                  <button key={o.value} onClick={() => set(m.id, o.value)}
-                    className={clsx('press h-9 rounded-xl px-3 text-[13px] font-medium transition-colors',
+                  <button key={o.value} role="radio" aria-checked={current === o.value} onClick={() => set(m.id, o.value)}
+                    title={o.label}
+                    className={clsx('press h-9 min-w-0 truncate rounded-lg px-1 text-[12px] font-medium transition-colors',
                       current === o.value ? o.tone : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200')}>
-                    {o.label}
+                    {o.short}
                   </button>
                 ))}
               </div>
             </div>
           );
         })}
-        {!sorted.length && <p className="text-xs text-zinc-600">Brak mandatów w kadencji.</p>}
+        {!sorted.length && <p className="text-[13px] text-zinc-500">Brak mandatów w kadencji.</p>}
       </div>
       {mode === 'self' && (
-        <p className="mt-3 text-[13px] text-zinc-500">Tryb „Samodzielnie”: radni mogą sami potwierdzać obecność.</p>
+        <p className="mt-3 text-[13px] text-zinc-500">Radni mogą sami potwierdzać obecność w aplikacji.</p>
       )}
     </div>
   );
