@@ -29,6 +29,8 @@ export interface LiveSessionData {
   candidates: VoteCandidate[];
   /** Active discussion queue (waiting + currently speaking), ordered by priority. */
   floorRequests: FloorRequest[];
+  /** Platform superadmin: chair powers everywhere, regardless of own mandate. */
+  isPlatformAdmin: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -79,6 +81,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [candidates, setCandidates] = useState<VoteCandidate[]>([]);
   const [floorRequests, setFloorRequests] = useState<FloorRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   const supabase = createClient();
 
@@ -96,13 +99,16 @@ export function useLiveSession(sessionId: string): LiveSessionData {
     setAgendaItems(items ?? []);
 
     let mandate: Mandate | null = null;
-    if (user) {
+    if (user && sess?.term_id) {
+      // Scoped to this sitting's term (a person can hold mandates in several orgs/terms).
       const { data } = await supabase
         .from('mandates').select('*')
-        .eq('profile_id', user.id).eq('is_active', true).limit(1).maybeSingle();
+        .eq('profile_id', user.id).eq('term_id', sess.term_id).eq('is_active', true).limit(1).maybeSingle();
       mandate = data;
     }
     setMyMandate(mandate);
+    const { data: pa } = await supabase.rpc('is_platform_admin');
+    setIsPlatformAdmin(pa === true);
 
     const { data: att } = await supabase
       .from('attendance')
@@ -201,7 +207,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   return {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, refetch,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
   };
 }
 

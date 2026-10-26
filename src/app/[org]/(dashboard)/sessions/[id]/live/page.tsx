@@ -33,10 +33,11 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, openVoteBallots,
-    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin,
   } = useLiveSession(sessionId);
 
   const isChair =
+    isPlatformAdmin ||
     myMandate?.role === 'chair' ||
     myMandate?.role === 'admin' ||
     (!!session?.chaired_by && session.chaired_by === myMandate?.profile_id);
