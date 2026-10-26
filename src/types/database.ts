@@ -102,6 +102,8 @@ export interface Session {
   opened_at: string | null;
   closed_at: string | null;
   on_break_until: string | null;
+  /** 'circular' = głosowanie obiegowe (migration 025). */
+  kind?: 'sitting' | 'circular';
   /** Per-turn speaking limit; null = no limit (migration 020). */
   speech_limit_seconds?: number | null;
   attendance_mode: AttendanceMode;
@@ -179,6 +181,8 @@ export interface Vote {
   ballots?: Ballot[];
   /** Procedural vote on a formal motion (migration 018). */
   floor_request_id?: string | null;
+  /** Deadline of a circular vote (migration 025). */
+  closes_at?: string | null;
 }
 
 export interface Ballot {

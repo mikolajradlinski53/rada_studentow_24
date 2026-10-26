@@ -65,7 +65,7 @@ function useLiveSessionId(organId: string) {
   useEffect(() => {
     const supabase = createClient();
     const load = () =>
-      supabase.from('sessions').select('id').eq('organ_id', organId).eq('status', 'in_progress')
+      supabase.from('sessions').select('id').eq('organ_id', organId).eq('status', 'in_progress').eq('kind', 'sitting')
         .order('opened_at', { ascending: false }).limit(1).maybeSingle()
         .then(({ data }) => setLiveId(data?.id ?? null));
     load();

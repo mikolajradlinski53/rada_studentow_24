@@ -83,19 +83,21 @@ async function buildPayload(
 
   const { data: session } = await supabase
     .from('sessions')
-    .select('title, organ:organs(org:organizations(slug))')
+    .select('title, kind, organ:organs(org:organizations(slug))')
     .eq('id', sessionId)
     .maybeSingle();
   if (!session) return null;
 
   const slug = (session as { organ?: { org?: { slug?: string } } }).organ?.org?.slug;
   if (!slug) return null;
-  const url = `/${slug}/sessions/${sessionId}/live`;
+  const circular = (session as { kind?: string }).kind === 'circular';
+  const url = circular ? `/${slug}/circular/${sessionId}` : `/${slug}/sessions/${sessionId}/live`;
 
   if (vote) {
     const election = vote.vote_kind === 'election';
     return {
-      title: election ? '🗳️ Wybory otwarte' : `🗳️ Głosowanie ${vote.vote_type === 'secret' ? 'tajne' : 'jawne'} otwarte`,
+      title: circular ? '🗳️ Głosowanie obiegowe'
+        : election ? '🗳️ Wybory otwarte' : `🗳️ Głosowanie ${vote.vote_type === 'secret' ? 'tajne' : 'jawne'} otwarte`,
       body: `${vote.title.replace(/^(Głosowanie|Wybory):\s*/i, '')}\n${session.title}`,
       url,
       tag: `vote-${id}`,

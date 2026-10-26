@@ -14,9 +14,12 @@ export async function GET(request: Request) {
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!pushConfigured()) return NextResponse.json({ skipped: 'push not configured' });
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ skipped: 'no service role key' });
+
+  // Circular votes past their deadline get tallied even if nobody opens them.
+  const { data: closedCircular } = await admin.rpc('close_due_circular_votes');
+  if (!pushConfigured()) return NextResponse.json({ skipped: 'push not configured', closedCircular });
 
   const now = new Date();
   const horizon = new Date(now.getTime() + 48 * 3600_000);
@@ -63,5 +66,5 @@ export async function GET(request: Request) {
     report.push({ session: s.id, kind, sent });
   }
 
-  return NextResponse.json({ checked: sessions?.length ?? 0, sent: report });
+  return NextResponse.json({ checked: sessions?.length ?? 0, sent: report, closedCircular });
 }

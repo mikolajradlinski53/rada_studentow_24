@@ -1,5 +1,5 @@
 import { createServerSupabase } from '@/lib/supabase/server';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { clsx } from 'clsx';
 import { CalendarDays, CalendarPlus, ChevronLeft, FileText, MapPin, Radio, ScrollText, Users } from 'lucide-react';
@@ -44,6 +44,7 @@ export default async function SessionDetailPage({
     .maybeSingle();
 
   if (!session) notFound();
+  if (session.kind === 'circular') redirect(`/${org}/circular/${id}`);
 
   const [{ data: agendaItems }, { data: passedVotes }, { data: resolutions }, { data: { user } }, { data: rsvps }, { data: roster }] = await Promise.all([
     supabase.from('agenda_items').select('*, attachments:agenda_attachments(*)').eq('session_id', id).order('position'),

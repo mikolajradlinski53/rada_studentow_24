@@ -144,12 +144,13 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 function SessionRow({ s, org }: { s: Session; org: string }) {
   const status = STATUS_CONFIG[s.status];
   const date = new Date(s.scheduled_at);
+  const circular = s.kind === 'circular';
   const live = s.status === 'in_progress';
   const rel = UPCOMING.includes(s.status) ? plRelativeDay(date) : null;
 
   return (
     <Link
-      href={live ? `/${org}/sessions/${s.id}/live` : `/${org}/sessions/${s.id}`}
+      href={circular ? `/${org}/circular/${s.id}` : live ? `/${org}/sessions/${s.id}/live` : `/${org}/sessions/${s.id}`}
       className={clsx(
         'press group flex items-center gap-4 rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4',
         live
@@ -185,7 +186,10 @@ function SessionRow({ s, org }: { s: Session; org: string }) {
             {live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />}
             {status.label}
           </span>
-          {s.session_type === 'extraordinary' && (
+          {circular && (
+            <span className="rounded-full bg-indigo-900/40 px-2 py-0.5 text-[11px] font-medium text-indigo-300">Obiegowe</span>
+          )}
+          {!circular && s.session_type === 'extraordinary' && (
             <span className="rounded-full border border-amber-800/80 px-2 py-0.5 text-[11px] text-amber-400">Nadzwyczajne</span>
           )}
         </div>

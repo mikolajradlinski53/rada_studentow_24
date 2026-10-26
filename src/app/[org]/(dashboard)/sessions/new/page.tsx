@@ -92,7 +92,12 @@ export default function NewSessionPage() {
         className="press -ml-2 mb-3 inline-flex h-9 items-center gap-0.5 rounded-xl pl-1 pr-3 text-[15px] text-indigo-300 hover:bg-zinc-800/40">
         <ChevronLeft className="h-5 w-5" /> Posiedzenia
       </Link>
-      <h1 className="mb-6 text-[22px] font-semibold tracking-tight text-zinc-50">Nowe posiedzenie</h1>
+      <h1 className="mb-4 text-[22px] font-semibold tracking-tight text-zinc-50">Nowe posiedzenie</h1>
+      <div role="tablist" aria-label="Rodzaj" className="mb-6 grid grid-cols-2 rounded-xl bg-zinc-900 p-1 ring-1 ring-zinc-800">
+        <span role="tab" aria-selected className="flex h-10 items-center justify-center rounded-lg bg-zinc-700/80 text-[14px] font-medium text-zinc-50 shadow-sm">Posiedzenie</span>
+        <Link href={`/${orgSlug}/circular/new`} role="tab" aria-selected={false}
+          className="flex h-10 items-center justify-center rounded-lg text-[14px] font-medium text-zinc-400 hover:text-zinc-200">Głosowanie obiegowe</Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">

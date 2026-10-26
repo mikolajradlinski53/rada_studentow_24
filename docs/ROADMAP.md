@@ -196,8 +196,9 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
 
 - **Ankiety** poza posiedzeniem (jeden/wiele wyborów, „bez nazwisk”, termin, zmiana
   odpowiedzi do końca, push), **kalendarz kadencji** jako prywatna subskrypcja webcal — 023.
-- **Do decyzji**: uchwały obiegowe (głosowanie zdalne z terminem) — czy regulamin RUSS
-  przewiduje tryb obiegowy?
+- **Głosowania obiegowe** (025): projekt + załączniki + pytania, termin do wyboru, jawne/
+  tajne, kworum = liczba oddanych głosów ≥ większość składu, samozamknięcie po terminie
+  (przy wejściu + cron), wynik → uchwała jednym kliknięciem.
 
 ## 🗓️ Plan: odłożone (świadomie, z powodem)
 
