@@ -106,6 +106,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 016_fix_session_timezone.sql — korekta godzin posiedzeń zapisanych jako UTC
 017_platform_admin_materials_secretary.sql — superadmin, protokolant, materiały (Storage)
 018_motion_votes_logo_upload.sql — wniosek formalny ↔ głosowanie, upload logo
+019_db_hardening.sql — uprawnienia w tally_vote / numeracji, anon bez akcji RPC
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy
