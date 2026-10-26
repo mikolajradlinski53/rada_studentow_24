@@ -159,6 +159,47 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
 - **Izolacja**: każdy widzi wyłącznie swój `/[org]` (RLS + `getOrgContext`) —
   fundament pod dziesiątki niezależnych instancji w jednym wdrożeniu.
 
+## 📱 Aplikacja mobilna, dostęp, design (X 2026) ✅ ZROBIONE
+
+- **PWA**: instalacja na ekranie głównym, service worker + strona offline, **web push**
+  (otwarcie posiedzenia/głosowania/wyborów/wniosku), dolny pasek nawigacji, wake lock,
+  dwustopniowe oddanie głosu, **przypomnienia** dzień wcześniej i w dniu posiedzenia
+  (Vercel Cron, `CRON_SECRET`).
+- **Dostęp radnych**: panel *Dostęp do platformy* (pojedynczo / lista z Excela), **hasła
+  tymczasowe** z wymuszoną zmianą przy 1. logowaniu, „Wyślij radnemu” (share sheet),
+  logowanie hasłem lub linkiem z maila, ekran „Brak dostępu”, zaproszenia także dla
+  istniejących kont (015).
+- **Superadmin platformy** (`platform_admins`, 017): dostęp do wszystkich organizacji,
+  `/superadmin` z zakładaniem nowych (organizacja + organ + kadencja + 1. admin).
+- **Protokolant** (`secretary`) generuje i edytuje protokoły; **PDF protokołu**
+  (`/sessions/[id]/protocol/print`).
+- **Materiały do punktów** porządku obrad (Supabase Storage `materials`, prywatny bucket,
+  podpisane linki), dodawane także w trakcie posiedzenia.
+- **Wniosek formalny po przegłosowaniu wykonuje się sam** (przerwa startuje, odrzucony
+  znika), bez drugiego kliknięcia (018).
+- **Design system** w duchu Apple: jasny + ciemny motyw (systemowy lub wybór w Profilu),
+  systemowy błękit / akcent organizacji w całej aplikacji, Geist, dokumenty w serifie A4,
+  nowy rzutnik (zegar, kworum, plansze wyników, pełny ekran). Zob. `docs/design-system.md`.
+- **Organizacja w panelu**: nazwa, kolor, **upload logo**, moduły, organ (skład = kworum)
+  i kadencja (sygnatury uchwał).
+- **Strefa czasowa**: wszystkie daty w czasie polskim (016 + Europe/Warsaw na serwerze).
+
+## 🗓️ Plan: odłożone (świadomie, z powodem)
+
+| Temat | Dlaczego później | Co trzeba |
+|---|---|---|
+| Domena + własny SMTP | decyzja: później | domena → Resend/SMTP w Supabase → szablon z `{{ .Token }}` → `NEXT_PUBLIC_EMAIL_OTP_CODE=1` |
+| Subdomeny / własne domeny per-org | zależy od domeny | rewrite w `proxy.ts` po hoście, slug już jest |
+| Szablony `.docx` uchwał (papier firmowy) | większy moduł | upload .docx z placeholderami (Storage) + docxtemplater w route |
+| Generowany PDF po stronie serwera + e-podpis | dziś PDF z przeglądarki wystarcza | headless Chrome / @react-pdf, kwalifikowany podpis (zewn. dostawca) |
+| Druga tura / próg w wyborach | reguły zależą od regulaminu | konfiguracja progu per-organ, „Ogłoś II turę” z top-N |
+| Wybory jawne/imienne | rzadkie | wariant `vote_type=open` dla `election` |
+| Timer „przedłużenia czasu” | brak limitu czasu wypowiedzi w systemie | najpierw limit wypowiedzi w kolejce mówców |
+| Napisy na żywo (streaming STT) | wymaga GPU / płatnego API | Deepgram/WhisperLive; batch Whisper już jest |
+| Nakładki na publicznej transmisji | wymaga publicznego odczytu agendy/głosowań | anon RLS na wybrane pola |
+| Filtr logów po posiedzeniu, logi obecności | kosmetyka | `target_id` sesji w metadata |
+| Asystent AI: podsumowania, model per-org | po pilocie | nowe zadania w `/api/ai` |
+
 ## 🧩 Drobne polish (na bieżąco)
 - ✅ **Imię i nazwisko** zamiast fragmentu maila: admin podaje nazwę przy
   zaproszeniu (`invitations.full_name` → trigger), a każdy użytkownik może
@@ -170,4 +211,4 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   present/late/excused/absent w UI.
 - ✅ Check-out (`left_early`) w liście obecności (ustawia `checked_out_at`, nie
   liczy się do kworum) + **eksport CSV** listy obecności (nazwisko/status/wejście/wyjście).
-- Lint debt: pre-existing `any` casts, set-state-in-effect na live page.
+- ✅ Lint: zero błędów (X 2026).

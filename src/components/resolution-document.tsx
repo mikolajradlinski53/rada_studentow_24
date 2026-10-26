@@ -1,6 +1,8 @@
-/** Presentational uchwała document (white, printable). Shared by the authenticated
- *  print view and the public registry. Language-agnostic — the caller passes the
- *  fields for the selected language (PL or EN). */
+import { DocumentPaper } from './document-paper';
+
+/** Presentational uchwała document (paper, printable as A4). Shared by the
+ *  authenticated print view and the public registry. Language-agnostic: the
+ *  caller passes the fields for the selected language (PL or EN). */
 export function ResolutionDocument({
   orgName, signature, title, legalBasis, body, dateStr, signer, lang = 'pl',
 }: {
@@ -14,28 +16,41 @@ export function ResolutionDocument({
   lang?: 'pl' | 'en';
 }) {
   const t = lang === 'en'
-    ? { inCase: 'on', signer: 'Chair', dateWord: 'of' }
-    : { inCase: 'w sprawie', signer: 'Przewodniczący', dateWord: 'z dnia' };
+    ? { inCase: 'on', signer: 'Chair', dateWord: 'of', footer: 'Document generated in RadaStudentów24' }
+    : { inCase: 'w sprawie', signer: 'Przewodniczący', dateWord: 'z dnia', footer: 'Dokument wygenerowany w systemie RadaStudentów24' };
 
   return (
-    <article className="theme-fixed mx-auto max-w-3xl rounded-lg bg-white p-10 text-zinc-900 shadow-xl print:rounded-none print:p-0 print:shadow-none">
+    <DocumentPaper footer={t.footer}>
       <header className="text-center">
-        <div className="text-sm uppercase tracking-wide text-zinc-600">{orgName}</div>
-        <h1 className="mt-3 text-xl font-bold">{signature}</h1>
-        {dateStr && <div className="mt-1 text-sm text-zinc-600">{t.dateWord} {dateStr}</div>}
-        {title && <h2 className="mt-4 text-base font-semibold">{t.inCase} {title}</h2>}
+        <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-600">{orgName}</div>
+        <div className="mx-auto mt-4 h-px w-16 bg-zinc-300" />
+        <h1 className="mt-5 text-[22px] font-bold leading-tight">{signature}</h1>
+        {dateStr && <div className="mt-1.5 text-[15px] text-zinc-600">{t.dateWord} {dateStr}</div>}
+        {title && <h2 className="mx-auto mt-5 max-w-[52ch] text-[17px] font-semibold leading-snug">{t.inCase} {title}</h2>}
       </header>
 
-      {legalBasis && <p className="mt-6 text-sm italic text-zinc-700">{legalBasis}</p>}
+      {legalBasis && <p className="mt-8 text-justify text-[15px] italic leading-relaxed text-zinc-700">{legalBasis}</p>}
 
-      <div className="mt-6 whitespace-pre-wrap text-[15px] leading-relaxed">{body}</div>
+      <div className="mt-8 space-y-3 text-[15.5px] leading-[1.7]">
+        {body.split(/\n{2,}/).map((block, i) => {
+          const text = block.trim();
+          if (!text) return null;
+          // "§ 1" on its own line is a heading in Polish legal style - centred, bold.
+          if (/^§\s*\d+[a-z]?\.?$/i.test(text)) {
+            return <p key={i} className="pt-3 text-center font-bold">{text}</p>;
+          }
+          return <p key={i} className="whitespace-pre-wrap text-justify [hyphens:auto]" lang={lang}>{text}</p>;
+        })}
+      </div>
 
-      <div className="mt-16 text-right">
-        <div className="inline-block text-center">
-          <div className="h-px w-56 bg-zinc-400" />
-          <div className="mt-1 text-sm text-zinc-700">{signer ?? t.signer}</div>
+      <div className="mt-20 flex justify-end break-inside-avoid">
+        <div className="w-64 text-center">
+          <div className="h-px bg-zinc-400" />
+          <div className="mt-2 text-[15px] font-semibold">{signer ?? ' '}</div>
+          <div className="text-[13px] text-zinc-600">{t.signer}</div>
         </div>
       </div>
-    </article>
+
+    </DocumentPaper>
   );
 }

@@ -7,7 +7,16 @@ export interface OrgContext {
   organId: string;
   organShortName: string;
   role: Role;
+  /** Empty for a platform superadmin acting in an org without own mandate. */
   mandateId: string;
+  isSuperadmin: boolean;
+}
+
+/** Platform superadmin (migration 017) - cross-org admin. */
+export async function isSuperadmin(): Promise<boolean> {
+  const supabase = await createServerSupabase();
+  const { data } = await supabase.rpc('is_platform_admin');
+  return data === true;
 }
 
 /**
@@ -48,15 +57,18 @@ export async function getOrgContext(slug: string): Promise<OrgContext | null> {
     .eq('is_active', true)
     .limit(1)
     .maybeSingle();
-  if (!mandate) return null;
+  const superadmin = await isSuperadmin();
+  if (!mandate && !superadmin) return null;
 
   return {
     org: org as Organization,
     termId: term.id,
     organId: term.organ_id,
     organShortName: (term as { organs?: { short_name?: string } }).organs?.short_name ?? '',
-    role: mandate.role as Role,
-    mandateId: mandate.id,
+    // A superadmin is always an admin; their own mandate (if any) still counts for voting.
+    role: superadmin ? 'admin' : (mandate!.role as Role),
+    mandateId: mandate?.id ?? '',
+    isSuperadmin: superadmin,
   };
 }
 
@@ -65,9 +77,14 @@ export async function getMyOrgs(): Promise<Pick<Organization, 'id' | 'slug' | 'n
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
+  // organizations is publicly readable (registry), so filter by actual access.
+  const { data: ids } = await supabase.rpc('get_user_org_ids');
+  const orgIds = ((ids as unknown as string[] | null) ?? []).map((x) => (typeof x === 'string' ? x : Object.values(x as object)[0] as string));
+  if (!orgIds.length) return [];
   const { data } = await supabase
     .from('organizations')
     .select('id, slug, name')
+    .in('id', orgIds)
     .order('name');
   return (data as Pick<Organization, 'id' | 'slug' | 'name'>[]) ?? [];
 }

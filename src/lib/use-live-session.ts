@@ -173,7 +173,11 @@ export function useLiveSession(sessionId: string): LiveSessionData {
     setLoading(false);
   }, [sessionId, supabase]);
 
-  useEffect(() => { refetch(); }, [refetch]);
+  // Initial load. Scheduled (not called inline) so the effect body itself never sets state.
+  useEffect(() => {
+    const t = setTimeout(() => { void refetch(); }, 0);
+    return () => clearTimeout(t);
+  }, [refetch]);
 
   useEffect(() => {
     if (!sessionId) return;

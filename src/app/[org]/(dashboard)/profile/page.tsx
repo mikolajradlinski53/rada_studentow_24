@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronRight, ShieldCheck } from 'lucide-react';
 import { getOrgContext, getMyOrgs } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { NotificationSettings } from '@/components/pwa/notification-toggle';
@@ -33,7 +35,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ org: s
       <div>
         <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Mój profil</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {ROLE_LABEL[ctx.role] ?? ctx.role} · {ctx.org.name}
+          {ctx.isSuperadmin ? 'Superadmin' : (ROLE_LABEL[ctx.role] ?? ctx.role)} · {ctx.org.name}
         </p>
       </div>
 
@@ -58,6 +60,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ org: s
           <PasswordForm submitLabel="Zmień hasło" />
         </div>
       </section>
+
+      {ctx.isSuperadmin && (
+        <Link href="/superadmin"
+          className="press flex items-center gap-3 rounded-xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-3.5 hover:bg-indigo-950/50">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-indigo-300" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-medium text-zinc-100">Superadmin platformy</div>
+            <div className="text-[13px] text-zinc-500">Wszystkie organizacje, zakładanie nowych</div>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-500" />
+        </Link>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-zinc-400">Konto</h2>

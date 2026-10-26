@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { clsx } from 'clsx';
+import { ChevronLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { PL_TZ } from '@/lib/dates';
 import { pl, enGB } from 'date-fns/locale';
@@ -41,9 +43,15 @@ export default async function ResolutionPrintPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex items-center justify-between gap-3 print:hidden">
+        <Link href={`/${org}/resolutions/${id}`}
+          className="press -ml-2 inline-flex h-9 items-center gap-0.5 rounded-xl pl-1 pr-3 text-[15px] text-indigo-300 hover:bg-zinc-800/40">
+          <ChevronLeft className="h-5 w-5" /> Uchwała
+        </Link>
+        <div className="flex items-center gap-2">
         <LangSwitch lang={lang} base={`/${org}/resolutions/${id}/print`} hasEn={!!r.title_en || !!r.body_en} />
         <PrintButton />
+        </div>
       </div>
       <ResolutionDocument
         orgName={session?.organ?.name ?? ctx.org.name}
@@ -62,10 +70,14 @@ export default async function ResolutionPrintPage({
 function LangSwitch({ lang, base, hasEn }: { lang: 'pl' | 'en'; base: string; hasEn: boolean }) {
   if (!hasEn) return <div />;
   return (
-    <div className="flex items-center gap-1 text-xs">
-      <Link href={base} className={lang === 'pl' ? 'font-semibold text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}>PL</Link>
-      <span className="text-zinc-700">|</span>
-      <Link href={`${base}?lang=en`} className={lang === 'en' ? 'font-semibold text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}>EN</Link>
+    <div role="radiogroup" aria-label="Język" className="grid grid-cols-2 rounded-xl bg-zinc-900 p-1 ring-1 ring-zinc-800">
+      {(['pl', 'en'] as const).map((l) => (
+        <Link key={l} href={l === 'pl' ? base : `${base}?lang=en`} role="radio" aria-checked={lang === l}
+          className={clsx('flex h-8 w-11 items-center justify-center rounded-lg text-[13px] font-semibold uppercase',
+            lang === l ? 'bg-zinc-700/80 text-zinc-50' : 'text-zinc-500 hover:text-zinc-300')}>
+          {l}
+        </Link>
+      ))}
     </div>
   );
 }

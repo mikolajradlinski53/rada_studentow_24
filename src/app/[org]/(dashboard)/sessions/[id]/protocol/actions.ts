@@ -16,7 +16,8 @@ const FORMAL_LABEL: Record<FormalMotionType, string> = {
 async function canManage(slug: string, sessionId: string) {
   const ctx = await getOrgContext(slug);
   if (!ctx) return null;
-  if (ctx.role === 'admin' || ctx.role === 'chair') return ctx;
+  // Protokolant writes protocols too (RLS: user_can_write_protocol, migration 017).
+  if (ctx.role === 'admin' || ctx.role === 'chair' || ctx.role === 'secretary') return ctx;
   // SKW / delegated chair: manages this specific session
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();

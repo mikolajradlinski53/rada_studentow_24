@@ -45,7 +45,7 @@ export default async function SessionDetailPage({
   if (!session) notFound();
 
   const [{ data: agendaItems }, { data: passedVotes }, { data: resolutions }, { data: { user } }] = await Promise.all([
-    supabase.from('agenda_items').select('*').eq('session_id', id).order('position'),
+    supabase.from('agenda_items').select('*, attachments:agenda_attachments(*)').eq('session_id', id).order('position'),
     supabase.from('votes').select('id, title').eq('session_id', id).eq('status', 'closed').eq('result', 'passed').order('closed_at'),
     supabase.from('resolutions').select('id, vote_id, signature, title, status').eq('session_id', id),
     supabase.auth.getUser(),
@@ -55,7 +55,7 @@ export default async function SessionDetailPage({
   const canManage = ctx.role === 'admin' || ctx.role === 'chair' || session.chaired_by === user?.id;
   const canStart = canManage && (session.status === 'scheduled' || session.status === 'draft');
   const isLive = session.status === 'in_progress';
-  const showProtocol = canManage || ['protocol_pending', 'closed', 'archived'].includes(session.status);
+  const showProtocol = canManage || ctx.role === 'secretary' || ['protocol_pending', 'closed', 'archived'].includes(session.status);
   const status = STATUS[session.status as SessionStatus];
 
   const organ = (session as { organ?: { short_name?: string; total_seats?: number } }).organ;
@@ -118,7 +118,8 @@ export default async function SessionDetailPage({
             <span className="text-[13px] tabular-nums text-zinc-500">{agendaItems!.length} pkt</span>
           )}
         </div>
-        <AgendaEditor sessionId={session.id} initialItems={agendaItems ?? []} canEdit={canManage && !isLive} />
+        <AgendaEditor sessionId={session.id} initialItems={agendaItems ?? []} canEdit={canManage && !isLive}
+          canManageMaterials={canManage} orgId={ctx.org.id} />
       </section>
 
       {/* Resolutions from passed votes */}

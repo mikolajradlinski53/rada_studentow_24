@@ -6,15 +6,18 @@ import type { Session } from '@/types/database';
 
 /** mm:ss remaining until an ISO target; null once elapsed. */
 export function useCountdown(targetIso: string | null): string | null {
-  const [, tick] = useState(0);
+  // "now" lives in state (ticked by the interval) so render stays pure.
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     if (!targetIso) return;
-    const i = setInterval(() => tick((n) => n + 1), 1000);
-    return () => clearInterval(i);
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const i = setInterval(tick, 1000);
+    return () => { clearTimeout(first); clearInterval(i); };
   }, [targetIso]);
 
-  if (!targetIso) return null;
-  const ms = new Date(targetIso).getTime() - Date.now();
+  if (!targetIso || now === null) return null;
+  const ms = new Date(targetIso).getTime() - now;
   if (ms <= 0) return null;
   const total = Math.ceil(ms / 1000);
   const m = Math.floor(total / 60);

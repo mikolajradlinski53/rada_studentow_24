@@ -19,7 +19,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ org: 
     .from('protocols').select('body, status, generated_at').eq('session_id', id).maybeSingle();
 
   const canEdit =
-    ctx.role === 'admin' || ctx.role === 'chair' ||
+    ctx.role === 'admin' || ctx.role === 'chair' || ctx.role === 'secretary' ||
     (!!session.chaired_by && session.chaired_by === user?.id);
 
   return (

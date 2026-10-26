@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { Hand } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { broadcastPush } from '@/lib/push-client';
+import { enactMotion } from '@/lib/motions';
 import type { FloorRequest, FormalMotionType, Mandate, Session } from '@/types/database';
 import { BreakBanner } from './break-banner';
 
@@ -73,15 +74,9 @@ export function Discussion({
   };
   const endSpeaker = async (id: string) => { await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('id', id); };
   const reject = async (id: string) => { await supabase.from('floor_requests').update({ status: 'rejected' }).eq('id', id); };
-  const acceptMotion = async (r: FloorRequest) => {
-    if (r.formal_type === 'break' && r.minutes) {
-      const until = new Date(Date.now() + r.minutes * 60000).toISOString();
-      await supabase.from('sessions').update({ on_break_until: until }).eq('id', sessionId);
-    }
-    await supabase.from('floor_requests').update({ status: 'done' }).eq('id', r.id);
-  };
-  // Turn a formal motion into a quick open procedural vote. The motion stays in
-  // the queue; after it passes the chair still clicks "Przyjmij" to enact it.
+  const acceptMotion = (r: FloorRequest) => enactMotion(supabase, sessionId, r);
+  // Turn a formal motion into a quick open procedural vote. The vote remembers
+  // the motion (floor_request_id): closing it enacts or rejects it (lib/motions).
   const voteOnMotion = async (r: FloorRequest) => {
     const { data: vote } = await supabase.from('votes').insert({
       session_id: sessionId,
@@ -90,6 +85,7 @@ export function Discussion({
       vote_kind: 'motion',
       status: 'open',
       opened_at: now(),
+      floor_request_id: r.id,
     }).select('id').single();
     if (vote) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { procedural: true } });

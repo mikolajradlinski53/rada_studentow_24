@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import webpush from 'web-push';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { sendPush, pushConfigured, type PushPayload } from '@/lib/push-server';
 
 export const runtime = 'nodejs';
 
@@ -12,17 +12,10 @@ export const runtime = 'nodejs';
 // claim_push_broadcast RPC (migration 014) — this route only signs and sends.
 type PushEvent = 'vote_opened' | 'session_opened';
 
-interface Payload {
-  title: string;
-  body: string;
-  url: string;
-  tag: string;
-}
+type Payload = PushPayload;
 
 export async function POST(request: Request) {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  if (!publicKey || !privateKey) {
+  if (!pushConfigured()) {
     return NextResponse.json({ error: 'Powiadomienia push nie są skonfigurowane (VAPID).' }, { status: 501 });
   }
 
@@ -47,32 +40,16 @@ export async function POST(request: Request) {
   const subs = (targets as { sub_endpoint: string; sub_p256dh: string; sub_auth: string }[] | null) ?? [];
   if (!subs.length) return NextResponse.json({ sent: 0 });
 
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@radastudentow24.pl', publicKey, privateKey);
-  const body = JSON.stringify(payload);
-
-  const results = await Promise.allSettled(
-    subs.map((s) =>
-      webpush.sendNotification(
-        { endpoint: s.sub_endpoint, keys: { p256dh: s.sub_p256dh, auth: s.sub_auth } },
-        body,
-        // A vote is only actionable for a few minutes — no point delivering it later.
-        { TTL: event === 'vote_opened' ? 600 : 3600, urgency: 'high' }
-      )
-    )
+  const { sent, failed, gone } = await sendPush(
+    subs.map((s) => ({ endpoint: s.sub_endpoint, p256dh: s.sub_p256dh, auth: s.sub_auth })),
+    payload,
+    // A vote is only actionable for a few minutes - no point delivering it later.
+    event === 'vote_opened' ? 600 : 3600
   );
-
-  // 404/410 = the device unsubscribed or the browser dropped it → forget it.
-  const gone = results.flatMap((r, i) =>
-    r.status === 'rejected' && [404, 410].includes((r.reason as { statusCode?: number })?.statusCode ?? 0)
-      ? [subs[i].sub_endpoint]
-      : []
-  );
+  // 404/410 = the device unsubscribed or the browser dropped it -> forget it.
   if (gone.length) await supabase.rpc('prune_push_subscriptions', { p_endpoints: gone });
 
-  return NextResponse.json({
-    sent: results.filter((r) => r.status === 'fulfilled').length,
-    failed: results.length - results.filter((r) => r.status === 'fulfilled').length,
-  });
+  return NextResponse.json({ sent, failed });
 }
 
 async function buildPayload(

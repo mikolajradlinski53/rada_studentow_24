@@ -78,3 +78,41 @@ button, a, [role="button"], input, select, textarea, label {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-zinc-600);
 }
+
+/* Org branding: the accent scale (indigo-* utilities) derives from the org's
+   accent colour, set by AppShell as --org-accent on <html class="org-accent">. */
+html.org-accent {
+  --color-indigo-950: color-mix(in oklab, var(--org-accent) 28%, #0b0b0d);
+  --color-indigo-900: color-mix(in oklab, var(--org-accent) 40%, #0b0b0d);
+  --color-indigo-800: color-mix(in oklab, var(--org-accent) 60%, #0b0b0d);
+  --color-indigo-700: color-mix(in oklab, var(--org-accent) 85%, black);
+  --color-indigo-600: var(--org-accent);
+  --color-indigo-500: color-mix(in oklab, var(--org-accent) 88%, white);
+  --color-indigo-400: color-mix(in oklab, var(--org-accent) 72%, white);
+  --color-indigo-300: color-mix(in oklab, var(--org-accent) 55%, white);
+  --color-indigo-200: color-mix(in oklab, var(--org-accent) 35%, white);
+}
+@media (prefers-color-scheme: light) {
+  html.org-accent:not([data-theme="dark"]) {
+    --color-indigo-950: color-mix(in oklab, var(--org-accent) 7%, white);
+    --color-indigo-900: color-mix(in oklab, var(--org-accent) 12%, white);
+    --color-indigo-800: color-mix(in oklab, var(--org-accent) 25%, white);
+    --color-indigo-400: color-mix(in oklab, var(--org-accent) 90%, black);
+    --color-indigo-300: color-mix(in oklab, var(--org-accent) 75%, black);
+    --color-indigo-200: color-mix(in oklab, var(--org-accent) 60%, black);
+  }
+}
+html.org-accent[data-theme="light"] {
+  --color-indigo-950: color-mix(in oklab, var(--org-accent) 7%, white);
+  --color-indigo-900: color-mix(in oklab, var(--org-accent) 12%, white);
+  --color-indigo-800: color-mix(in oklab, var(--org-accent) 25%, white);
+  --color-indigo-400: color-mix(in oklab, var(--org-accent) 90%, black);
+  --color-indigo-300: color-mix(in oklab, var(--org-accent) 75%, black);
+  --color-indigo-200: color-mix(in oklab, var(--org-accent) 60%, black);
+}
+
+/* Printed documents (uchwały): real A4 with official margins, no app chrome. */
+@media print {
+  @page { size: A4; margin: 20mm 18mm; }
+  html, body { background: #fff !important; }
+}

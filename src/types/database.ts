@@ -149,6 +149,7 @@ export interface AgendaAttachment {
   file_name: string;
   file_url: string;
   file_type: string | null;
+  file_size: number | null;
   uploaded_by: string | null;
   created_at: string;
 }
@@ -174,6 +175,8 @@ export interface Vote {
   created_at: string;
   // Joined
   ballots?: Ballot[];
+  /** Procedural vote on a formal motion (migration 018). */
+  floor_request_id?: string | null;
 }
 
 export interface Ballot {

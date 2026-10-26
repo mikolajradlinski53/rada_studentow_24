@@ -264,3 +264,47 @@ export async function cancelInvitation(slug: string, invitationId: string): Prom
   revalidatePath(`/${slug}/admin`);
   return { ok: true };
 }
+
+export interface OrganTermFields {
+  organName: string;
+  organShort: string;
+  totalSeats: number;
+  termLabel: string;
+  termStarts: string; // YYYY-MM-DD
+  termEnds: string;
+}
+
+/**
+ * Organ (name, short name, seats) + active term (label used in resolution
+ * signatures, dates). No RLS write policies exist for organs/terms, so this
+ * runs with the service role after the admin check.
+ */
+export async function updateOrganTerm(slug: string, f: OrganTermFields): Promise<ActionResult> {
+  const ctx = await getOrgContext(slug);
+  if (!ctx || ctx.role !== 'admin') return { error: 'Brak uprawnień' };
+  const admin = createAdminSupabase();
+  if (!admin) return { error: 'Brak SUPABASE_SERVICE_ROLE_KEY na serwerze.' };
+
+  if (!f.organName.trim() || !f.organShort.trim()) return { error: 'Podaj nazwę i skrót organu.' };
+  if (!Number.isInteger(f.totalSeats) || f.totalSeats < 1 || f.totalSeats > 500) return { error: 'Liczba miejsc: 1-500.' };
+  if (!f.termLabel.trim()) return { error: 'Podaj oznaczenie kadencji.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.termStarts) || !/^\d{4}-\d{2}-\d{2}$/.test(f.termEnds) || f.termEnds < f.termStarts) {
+    return { error: 'Sprawdź daty kadencji.' };
+  }
+
+  const { error: e1 } = await admin.from('organs')
+    .update({ name: f.organName.trim(), short_name: f.organShort.trim(), total_seats: f.totalSeats })
+    .eq('id', ctx.organId).eq('org_id', ctx.org.id);
+  if (e1) return { error: e1.message };
+  const { error: e2 } = await admin.from('terms')
+    .update({ label: f.termLabel.trim(), starts_at: f.termStarts, ends_at: f.termEnds })
+    .eq('id', ctx.termId).eq('organ_id', ctx.organId);
+  if (e2) return { error: e2.message };
+
+  await (await createServerSupabase()).rpc('log_audit', {
+    p_action: 'org.organ_updated', p_target_type: 'org', p_target_id: ctx.org.id,
+    p_metadata: { term: f.termLabel.trim(), seats: f.totalSeats },
+  });
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true };
+}

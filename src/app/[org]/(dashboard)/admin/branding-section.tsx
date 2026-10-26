@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Check } from 'lucide-react';
+import { Check, Upload } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import type { OrgModule } from '@/types/database';
 import { updateBranding } from './actions';
 
@@ -13,9 +14,10 @@ const MODULE_LABEL: Record<OrgModule, string> = {
 const TOGGLEABLE: OrgModule[] = ['resolutions', 'audit'];
 
 export function BrandingSection({
-  slug, name: name0, accentColor, logoUrl, enabledModules,
+  slug, orgId, name: name0, accentColor, logoUrl, enabledModules,
 }: {
   slug: string;
+  orgId: string;
   name: string;
   accentColor: string | null;
   logoUrl: string | null;
@@ -29,6 +31,21 @@ export function BrandingSection({
   const [modules, setModules] = useState<OrgModule[]>(enabledModules);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadLogo = async (file: File) => {
+    if (file.size > 2 * 1024 * 1024) { setError('Logo może mieć najwyżej 2 MB.'); return; }
+    setUploading(true); setError(null);
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `${orgId}/logo-${Date.now()}.${ext}`;
+    const supabase = createClient();
+    const { error: upErr } = await supabase.storage.from('branding').upload(path, file, { contentType: file.type, upsert: true });
+    setUploading(false);
+    if (upErr) { setError('Nie udało się wgrać logo.'); return; }
+    setLogo(supabase.storage.from('branding').getPublicUrl(path).data.publicUrl);
+    setSaved(false);
+  };
 
   const toggle = (m: OrgModule) =>
     setModules((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
@@ -46,8 +63,8 @@ export function BrandingSection({
   const label = 'mb-2 block px-1 text-[13px] font-medium text-zinc-400';
 
   return (
-    <section className="mt-12">
-      <h2 className="mb-2.5 text-[13px] font-medium uppercase tracking-wide text-zinc-500">Wygląd organizacji</h2>
+    <section>
+      <h2 className="mb-2.5 text-[13px] font-medium uppercase tracking-wide text-zinc-500">Wygląd</h2>
       <div className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5">
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -72,6 +89,13 @@ export function BrandingSection({
                 <img src={logo} alt="Podgląd logo" className="h-12 w-12 shrink-0 rounded-xl border border-zinc-800 bg-zinc-950 object-contain p-1.5" />
               )}
             </div>
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.target.value = ''; }} />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="press mt-2 flex h-10 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-[13px] font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-50">
+              <Upload className="h-4 w-4" /> {uploading ? 'Wgrywanie…' : 'Wgraj plik z logo'}
+            </button>
+            <p className="mt-1.5 px-1 text-[12px] text-zinc-500">PNG, JPG, WebP lub SVG do 2 MB. Najlepiej kwadratowe, na przezroczystym tle.</p>
           </div>
         </div>
 

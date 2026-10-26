@@ -34,6 +34,8 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/auth/callback' ||
     request.nextUrl.pathname.startsWith('/public') ||
+    // Cron routes authenticate with CRON_SECRET themselves.
+    request.nextUrl.pathname.startsWith('/api/cron/') ||
     // Public resolution registry + transmission: /{orgSlug}/rejestr|transmisja[/...]
     /^\/[^/]+\/(rejestr|transmisja)(\/|$)/.test(request.nextUrl.pathname);
 

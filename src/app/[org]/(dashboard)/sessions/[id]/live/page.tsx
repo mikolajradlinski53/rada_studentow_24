@@ -11,11 +11,13 @@ import { RollCall } from '@/components/session/roll-call';
 import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/session/election';
 import { Transmission } from '@/components/session/transmission';
 import { MotionVoteCard } from '@/components/session/motion-vote';
+import { AgendaMaterials } from '@/components/session/agenda-materials';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Check } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
+import { settleMotionVote } from '@/lib/motions';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -81,6 +83,8 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     if (!activeVote) return;
     await supabase.rpc('tally_vote', { p_vote_id: activeVote.id });
     await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: {} });
+    // Procedural vote on a formal motion: passed -> enact (e.g. start the break), else reject.
+    await settleMotionVote(supabase, sessionId, activeVote.id);
   };
 
   const castBallot = async (choice: BallotChoice): Promise<boolean> => {
@@ -276,6 +280,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                   <ElectionOpener sessionId={sessionId} item={item} />
                 )}
               </div>
+              <div className="pl-7"><AgendaMaterials itemId={item.id} sessionId={sessionId} canEdit={false} /></div>
               <VoteResults agendaItemId={item.id} />
             </div>
           ))}

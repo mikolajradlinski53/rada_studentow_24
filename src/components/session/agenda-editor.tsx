@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { ListPlus, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgendaItem, AgendaItemType } from '@/types/database';
+import { AgendaMaterials } from './agenda-materials';
 
 const ITEM_TYPE_LABELS: Record<AgendaItemType, string> = {
   procedural: 'Proceduralne',
@@ -26,9 +27,12 @@ interface AgendaEditorProps {
   sessionId: string;
   initialItems: AgendaItem[];
   canEdit: boolean;
+  /** Materials can be managed even during a live sitting (agenda itself is frozen). */
+  canManageMaterials?: boolean;
+  orgId?: string;
 }
 
-export function AgendaEditor({ sessionId, initialItems, canEdit }: AgendaEditorProps) {
+export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMaterials = canEdit, orgId }: AgendaEditorProps) {
   const [items, setItems] = useState<AgendaItem[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -81,6 +85,8 @@ export function AgendaEditor({ sessionId, initialItems, canEdit }: AgendaEditorP
             <span className={clsx('mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium', ITEM_TYPE_TONE[item.item_type])}>
               {ITEM_TYPE_LABELS[item.item_type]}
             </span>
+            <AgendaMaterials itemId={item.id} sessionId={sessionId} orgId={orgId}
+              canEdit={canManageMaterials} initial={item.attachments ?? []} />
           </div>
           {canEdit && (
             <button

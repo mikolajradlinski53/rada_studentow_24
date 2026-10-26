@@ -53,7 +53,8 @@ WHISPER_API_URL=https://whisper.twoj-serwer.pl/v1/audio/transcriptions  # opcjon
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # opcjonalnie — powiadomienia push
 VAPID_PRIVATE_KEY=...              # (npx web-push generate-vapid-keys)
 VAPID_SUBJECT=mailto:admin@twoja-domena.pl
-SUPABASE_SERVICE_ROLE_KEY=eyJ...   # hasła tymczasowe dla radnych (TYLKO serwer)
+SUPABASE_SERVICE_ROLE_KEY=eyJ...   # hasła tymczasowe, organ/kadencja, superadmin, cron (TYLKO serwer)
+CRON_SECRET=...                    # przypomnienia push (Vercel Cron, vercel.json)
 ```
 
 **Dostęp radnych.** Admin dodaje osoby w *Administracja → Dostęp do platformy*
@@ -102,6 +103,9 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 013_resolution_bilingual.sql — uchwały PL/EN
 014_push_notifications.sql — subskrypcje push (PWA) + broadcast RPC
 015_accept_invitations.sql — zaproszenia działają też dla istniejących kont
+016_fix_session_timezone.sql — korekta godzin posiedzeń zapisanych jako UTC
+017_platform_admin_materials_secretary.sql — superadmin, protokolant, materiały (Storage)
+018_motion_votes_logo_upload.sql — wniosek formalny ↔ głosowanie, upload logo
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

@@ -43,6 +43,17 @@ function visibleNav(modules: OrgModule[], role: string) {
   );
 }
 
+/** Applies the org accent to the whole document (incl. portaled sheets); see globals.css. */
+function useOrgAccent(accent: string | null) {
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!accent || !/^#[0-9a-f]{6}$/i.test(accent)) return;
+    root.style.setProperty('--org-accent', accent);
+    root.classList.add('org-accent');
+    return () => { root.classList.remove('org-accent'); root.style.removeProperty('--org-accent'); };
+  }, [accent]);
+}
+
 /** Id of the organ's session currently in progress (realtime), or null. */
 function useLiveSessionId(organId: string) {
   const [liveId, setLiveId] = useState<string | null>(null);
@@ -71,12 +82,13 @@ function useLiveSessionId(organId: string) {
 export function AppShell({ children, accent, ...props }: SidebarProps & { children: React.ReactNode; accent: string | null }) {
   const liveId = useLiveSessionId(props.organId);
   const pathname = usePathname();
+  useOrgAccent(accent);
   const liveHref = liveId ? `/${props.orgSlug}/sessions/${liveId}/live` : null;
   const onLivePage = !!liveHref && pathname.startsWith(liveHref);
 
   return (
     <div
-      className="flex h-dvh flex-col bg-zinc-950 text-zinc-100 md:flex-row"
+      className="flex h-dvh flex-col bg-zinc-950 text-zinc-100 md:flex-row print:block print:h-auto print:bg-white"
       style={accent ? ({ ['--accent']: accent } as React.CSSProperties) : undefined}
     >
       {/* Desktop: fixed left rail */}
@@ -116,8 +128,8 @@ export function AppShell({ children, accent, ...props }: SidebarProps & { childr
         </div>
       </header>
 
-      <main className="pl-safe pr-safe flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto max-w-5xl px-4 py-5 md:px-6 md:py-8">{children}</div>
+      <main className="pl-safe pr-safe flex-1 overflow-y-auto overscroll-contain print:overflow-visible print:p-0">
+        <div className="mx-auto max-w-5xl px-4 py-5 md:px-6 md:py-8 print:max-w-none print:p-0">{children}</div>
       </main>
 
       <MobileTabBar orgSlug={props.orgSlug} role={props.role} modules={props.modules} liveId={liveId} />

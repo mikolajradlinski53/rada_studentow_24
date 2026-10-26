@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import { Check, ChevronLeft, Mic, RefreshCw, ScrollText, Sparkles } from 'lucide-react';
+import { Check, ChevronLeft, FileDown, Mic, RefreshCw, ScrollText, Sparkles } from 'lucide-react';
 import type { ProtocolStatus } from '@/types/database';
 import { runAiStream } from '@/lib/ai';
 import { generateProtocol, saveProtocol } from './actions';
@@ -89,7 +89,15 @@ export function ProtocolEditor({
       </Link>
 
       <div className="mb-6">
-        <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Protokół</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Protokół</h1>
+          {hasProtocol && (
+            <Link href={`/${org}/sessions/${sessionId}/protocol/print`}
+              className="press flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-700 px-3.5 text-sm font-medium text-zinc-200 hover:border-zinc-500">
+              <FileDown className="h-4 w-4" /> PDF
+            </Link>
+          )}
+        </div>
         {generatedAt && (
           <p className="mt-1 text-[13px] text-zinc-500">
             Szkielet wygenerowany {format(new Date(generatedAt), "d MMMM yyyy, 'godz.' HH:mm", { locale: pl })}
