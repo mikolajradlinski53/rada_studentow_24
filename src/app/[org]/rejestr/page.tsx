@@ -5,33 +5,41 @@ import { ChevronRight, FileText } from 'lucide-react';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PublicShell } from '@/components/ui/public-shell';
 import { plLong } from '@/lib/dates';
+import { SearchBox, searchPattern } from '@/components/ui/search-box';
 
 // Public registry - no auth. RLS exposes only published resolutions + org info.
-export default async function PublicRegistryPage({ params }: { params: Promise<{ org: string }> }) {
+export default async function PublicRegistryPage({
+  params, searchParams,
+}: { params: Promise<{ org: string }>; searchParams: Promise<{ q?: string }> }) {
   const { org: slug } = await params;
+  const q = (await searchParams).q ?? '';
+  const pattern = searchPattern(q);
   const supabase = await createServerSupabase();
 
   const { data: org } = await supabase
     .from('organizations').select('id, name').eq('slug', slug).maybeSingle();
   if (!org) notFound();
 
-  const { data: resolutions } = await supabase
+  let query = supabase
     .from('resolutions')
     .select('id, signature, title, signed_at')
     .eq('org_id', org.id)
-    .eq('status', 'published')
-    .order('number', { ascending: false });
+    .eq('status', 'published');
+  if (pattern) query = query.or(`signature.ilike.${pattern},title.ilike.${pattern},body.ilike.${pattern}`);
+  const { data: resolutions } = await query.order('number', { ascending: false });
 
   return (
     <PublicShell orgName={org.name} slug={slug}>
       <h1 className="text-[26px] font-semibold tracking-tight text-zinc-50">Rejestr uchwał</h1>
       <p className="mt-1 text-[15px] text-zinc-500">Uchwały opublikowane przez organ. Dostęp publiczny.</p>
 
-      <div className="mt-7">
+      <div className="mt-6"><SearchBox action={`/${slug}/rejestr`} q={q} placeholder="Szukaj uchwały" /></div>
+
+      <div className="mt-4">
         {!resolutions?.length ? (
           <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-12 text-center">
             <FileText className="mx-auto h-8 w-8 text-zinc-600" />
-            <p className="mt-3 text-[15px] text-zinc-300">Brak opublikowanych uchwał</p>
+            <p className="mt-3 text-[15px] text-zinc-300">{q ? `Nic nie znaleziono dla „${q}”` : 'Brak opublikowanych uchwał'}</p>
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">

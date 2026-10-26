@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { ChevronRight, ExternalLink, FileDown, FileText } from 'lucide-react';
 import { getOrgContext } from '@/lib/org';
 import type { ResolutionStatus } from '@/types/database';
+import { SearchBox, searchPattern } from '@/components/ui/search-box';
 
 const STATUS: Record<ResolutionStatus, { label: string; tone: string }> = {
   draft: { label: 'Szkic', tone: 'bg-zinc-800 text-zinc-400' },
@@ -13,19 +14,24 @@ const STATUS: Record<ResolutionStatus, { label: string; tone: string }> = {
   revoked: { label: 'Uchylona', tone: 'bg-red-900/40 text-red-300' },
 };
 
-export default async function ResolutionsPage({ params }: { params: Promise<{ org: string }> }) {
+export default async function ResolutionsPage({
+  params, searchParams,
+}: { params: Promise<{ org: string }>; searchParams: Promise<{ q?: string }> }) {
   const { org } = await params;
+  const q = (await searchParams).q ?? '';
+  const pattern = searchPattern(q);
   const ctx = await getOrgContext(org);
   if (!ctx) notFound();
 
   const supabase = await createServerSupabase();
 
   // Scope to this org's active term (isolation).
-  const { data: resolutions } = await supabase
+  let query = supabase
     .from('resolutions')
     .select('id, signature, title, status, session:sessions(title)')
-    .eq('term_id', ctx.termId)
-    .order('number', { ascending: false });
+    .eq('term_id', ctx.termId);
+  if (pattern) query = query.or(`signature.ilike.${pattern},title.ilike.${pattern},body.ilike.${pattern}`);
+  const { data: resolutions } = await query.order('number', { ascending: false });
 
   return (
     <div>
@@ -33,7 +39,7 @@ export default async function ResolutionsPage({ params }: { params: Promise<{ or
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Uchwały</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {resolutions?.length ? `${resolutions.length} w tej kadencji` : 'Rejestr uchwał organu'}
+            {q ? `Wyniki dla „${q}”: ${resolutions?.length ?? 0}` : resolutions?.length ? `${resolutions.length} w tej kadencji` : 'Rejestr uchwał organu'}
           </p>
         </div>
         <Link href={`/${org}/rejestr`} target="_blank"
@@ -43,11 +49,13 @@ export default async function ResolutionsPage({ params }: { params: Promise<{ or
         </Link>
       </div>
 
+      <div className="mb-4"><SearchBox action={`/${org}/resolutions`} q={q} placeholder="Szukaj w uchwałach (numer, tytuł, treść)" /></div>
+
       {!resolutions?.length ? (
         <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-12 text-center">
           <FileText className="mx-auto h-8 w-8 text-zinc-600" />
-          <p className="mt-3 text-[15px] text-zinc-300">Brak uchwał</p>
-          <p className="mt-1 text-[13px] text-zinc-500">Uchwała powstaje z przyjętego głosowania na posiedzeniu.</p>
+          <p className="mt-3 text-[15px] text-zinc-300">{q ? 'Nic nie znaleziono' : 'Brak uchwał'}</p>
+          <p className="mt-1 text-[13px] text-zinc-500">{q ? 'Spróbuj innego słowa albo numeru uchwały.' : 'Uchwała powstaje z przyjętego głosowania na posiedzeniu.'}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">

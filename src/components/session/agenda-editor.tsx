@@ -6,6 +6,7 @@ import { ListPlus, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgendaItem, AgendaItemType } from '@/types/database';
 import { AgendaMaterials } from './agenda-materials';
+import { AgendaComments } from './agenda-comments';
 
 const ITEM_TYPE_LABELS: Record<AgendaItemType, string> = {
   procedural: 'Proceduralne',
@@ -30,9 +31,11 @@ interface AgendaEditorProps {
   /** Materials can be managed even during a live sitting (agenda itself is frozen). */
   canManageMaterials?: boolean;
   orgId?: string;
+  /** Caller's mandate (to post questions); empty for a superadmin without a seat. */
+  myMandateId?: string;
 }
 
-export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMaterials = canEdit, orgId }: AgendaEditorProps) {
+export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMaterials = canEdit, orgId, myMandateId }: AgendaEditorProps) {
   const [items, setItems] = useState<AgendaItem[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -87,6 +90,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
             </span>
             <AgendaMaterials itemId={item.id} sessionId={sessionId} orgId={orgId}
               canEdit={canManageMaterials} initial={item.attachments ?? []} />
+            <AgendaComments itemId={item.id} myMandateId={myMandateId} canModerate={canManageMaterials} />
           </div>
           {canEdit && (
             <button

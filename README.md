@@ -109,6 +109,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 019_db_hardening.sql — uprawnienia w tally_vote / numeracji, anon bez akcji RPC
 020_rsvp_speech_timer.sql — „będę / nie będę”, limit czasu wypowiedzi
 021_chair_turnout.sql — prowadzący widzi, kto już zagłosował (nie jak)
+022_agenda_comments_term_stats.sql — pytania do punktów, frekwencja w kadencji
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

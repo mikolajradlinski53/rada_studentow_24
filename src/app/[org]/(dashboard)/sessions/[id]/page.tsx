@@ -149,7 +149,7 @@ export default async function SessionDetailPage({
           )}
         </div>
         <AgendaEditor sessionId={session.id} initialItems={agendaItems ?? []} canEdit={canManage && !isLive}
-          canManageMaterials={canManage} orgId={ctx.org.id} />
+          canManageMaterials={canManage} orgId={ctx.org.id} myMandateId={ctx.mandateId} />
       </section>
 
       {/* Resolutions from passed votes */}

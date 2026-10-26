@@ -13,6 +13,7 @@ import { Transmission } from '@/components/session/transmission';
 import { MotionVoteCard } from '@/components/session/motion-vote';
 import { AgendaMaterials } from '@/components/session/agenda-materials';
 import { PendingVoters } from '@/components/session/pending-voters';
+import { AgendaComments } from '@/components/session/agenda-comments';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Check } from 'lucide-react';
@@ -286,7 +287,10 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                   <ElectionOpener sessionId={sessionId} item={item} />
                 )}
               </div>
-              <div className="pl-7"><AgendaMaterials itemId={item.id} sessionId={sessionId} canEdit={false} /></div>
+              <div className="pl-7">
+                <AgendaMaterials itemId={item.id} sessionId={sessionId} canEdit={false} />
+                <AgendaComments itemId={item.id} myMandateId={myMandate?.id} canModerate={isChair} />
+              </div>
               <VoteResults agendaItemId={item.id} />
             </div>
           ))}

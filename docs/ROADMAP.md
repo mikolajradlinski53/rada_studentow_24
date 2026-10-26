@@ -190,6 +190,10 @@ system. Mamy fundament (akcent, logo, moduły); rozwijamy do pełnego brandingu:
   „przedłużenie czasu” dodaje minuty mówcy; **kto jeszcze nie zagłosował** dla
   prowadzącego (tajne: tylko fakt oddania głosu, 021).
 
+- **Pytania i uwagi do punktów** porządku obrad (przed i w trakcie, moderacja prowadzącego),
+  **frekwencja** w kadencji (obecność + udział w głosowaniach, bez treści głosów),
+  **wyszukiwarka uchwał** (aplikacja + rejestr publiczny) — 022.
+
 ## 🗓️ Plan: odłożone (świadomie, z powodem)
 
 | Temat | Dlaczego później | Co trzeba |

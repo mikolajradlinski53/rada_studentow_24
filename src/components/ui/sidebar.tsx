@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { CalendarDays, FileText, ShieldCheck, Settings, UserRound } from 'lucide-react';
+import { BarChart3, CalendarDays, FileText, ShieldCheck, Settings, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Role, OrgModule } from '@/types/database';
 
@@ -15,11 +15,14 @@ type NavItem = {
   short: string;
   icon: (p: { className?: string }) => React.ReactNode;
   roles: Role[] | null;
+  /** Shown in the desktop rail only (the phone tab bar is capped at 5). */
+  desktopOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { module: 'sessions', path: 'sessions', label: 'Posiedzenia', short: 'Posiedzenia', icon: CalendarDays, roles: null },
   { module: 'resolutions', path: 'resolutions', label: 'Uchwały', short: 'Uchwały', icon: FileText, roles: null },
+  { module: 'sessions', path: 'stats', label: 'Frekwencja', short: 'Frekwencja', icon: BarChart3, roles: null, desktopOnly: true },
   { module: 'audit', path: 'audit', label: 'Logi', short: 'Logi', icon: ShieldCheck, roles: ['admin', 'chair', 'auditor'] },
   { module: null, path: 'admin', label: 'Administracja', short: 'Admin', icon: Settings, roles: ['admin'] },
 ];
@@ -141,7 +144,7 @@ export function AppShell({ children, accent, ...props }: SidebarProps & { childr
 function MobileTabBar({ orgSlug, role, modules, liveId }: Pick<SidebarProps, 'orgSlug' | 'role' | 'modules'> & { liveId: string | null }) {
   const pathname = usePathname();
   const items = [
-    ...visibleNav(modules, role),
+    ...visibleNav(modules, role).filter((i) => !i.desktopOnly),
     { module: null, path: 'profile', label: 'Profil', short: 'Profil', icon: UserRound, roles: null } as NavItem,
   ];
 

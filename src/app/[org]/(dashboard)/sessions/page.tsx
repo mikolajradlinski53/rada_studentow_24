@@ -2,7 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { CalendarPlus, ChevronRight, MapPin, Plus } from 'lucide-react';
+import { BarChart3, CalendarPlus, ChevronRight, MapPin, Plus } from 'lucide-react';
 import { getOrgContext } from '@/lib/org';
 import { plDay, plLong, plMonthShort, plRelativeDay, plTime, plWeekdayShort } from '@/lib/dates';
 import type { Session, SessionStatus } from '@/types/database';
@@ -53,6 +53,11 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
           <h1 className="text-[22px] font-semibold tracking-tight text-zinc-50">Posiedzenia</h1>
           <p className="mt-1 truncate text-sm text-zinc-500">{ctx.organShortName || ctx.org.name}</p>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+        <Link href={`/${org}/stats`} aria-label="Frekwencja"
+          className="press flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 md:hidden">
+          <BarChart3 className="h-4 w-4" />
+        </Link>
         {canCreate && (
           <Link
             href={`/${org}/sessions/new`}
@@ -63,6 +68,7 @@ export default async function SessionsPage({ params }: { params: Promise<{ org: 
             <span className="sm:hidden">Nowe</span><span className="hidden sm:inline">Nowe posiedzenie</span>
           </Link>
         )}
+        </div>
       </div>
 
       <div className="mb-5 empty:hidden"><NotificationNudge /></div>
