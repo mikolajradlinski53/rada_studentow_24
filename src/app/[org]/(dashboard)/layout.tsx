@@ -1,5 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
-import { getOrgContext, getMyOrgs } from '@/lib/org';
+import { getOrgContext, getMyOrgs, getAuthUser } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { AppShell } from '@/components/ui/sidebar';
 
@@ -12,22 +12,19 @@ export default async function DashboardLayout({
 }) {
   const { org: slug } = await params;
 
-  const supabase = await createServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect('/login');
   // Signed in with an admin-issued temporary password → choose your own first.
   if (user.user_metadata?.must_change_password) redirect('/ustaw-haslo');
 
-  const ctx = await getOrgContext(slug);
+  // Independent lookups in parallel; getOrgContext is cached, so the page reuses it.
+  const supabase = await createServerSupabase();
+  const [ctx, { data: profile }, orgs] = await Promise.all([
+    getOrgContext(slug),
+    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    getMyOrgs(),
+  ]);
   if (!ctx) notFound(); // org missing OR no active mandate here → isolation gate
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const orgs = await getMyOrgs();
 
   return (
     <AppShell
