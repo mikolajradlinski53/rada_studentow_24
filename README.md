@@ -83,7 +83,8 @@ protokołów, formatowanie uchwał, tłumaczenie PL→EN) używa **self-hostowan
 
 Przez **Supabase CLI**: `npm run db:login`, `npm run db:link`, potem `npm run db:push`
 — szczegóły (w tym jednorazowy baseline istniejącej bazy) w
-[docs/supabase-cli.md](docs/supabase-cli.md).
+[docs/supabase-cli.md](docs/supabase-cli.md). Nowe reguły dostępu (RLS, funkcje
+`SECURITY DEFINER`) pisz według [docs/db-access-rules.md](docs/db-access-rules.md).
 
 Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 

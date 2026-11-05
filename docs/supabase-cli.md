@@ -39,6 +39,9 @@ Zasada: **schemat zmieniamy tylko migracjami** — nic ręcznie w dashboardzie, 
 Pisz migracje idempotentnie (`IF NOT EXISTS`, `CREATE OR REPLACE`,
 `DROP POLICY IF EXISTS` przed `CREATE POLICY`), jak istniejące 001–014.
 
+Reguły dostępu i funkcje `SECURITY DEFINER`: zasady i wzór testu w
+[db-access-rules.md](db-access-rules.md).
+
 ## Lokalna baza (opcjonalnie, wymaga Dockera)
 
 ```bash
