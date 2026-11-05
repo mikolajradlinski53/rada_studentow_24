@@ -118,6 +118,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 028_open_vote_reveal_on_close.sql — głosowanie jawne: w trakcie widać tylko kto zagłosował, wynik i lista imienna po zamknięciu
 029_vote_integrity.sql — wyników głosowań nie da się edytować ręcznie; zamknięte głosowanie jest ostateczne
 030_mandate_scoped_policies.sql — obecność, kolejka mówców i pokwitowania KR wymagają aktywnego mandatu z kadencji posiedzenia
+031_org_access_active_term.sql — dostęp do organizacji i prawa admina tylko z mandatu w aktywnej kadencji (jak w aplikacji)
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy
