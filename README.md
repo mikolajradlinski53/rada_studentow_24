@@ -125,6 +125,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 034_deciding_vote_chair_only.sql — głos rozstrzygający wyłącznie dla roli przewodniczącego
 035_resolution_lock_and_log.sql — wersja EN uchwał (brakująca 013); opublikowana uchwała jest ostateczna (tylko uchylenie); każda zmiana w logach
 036_fix_resolution_log.sql — poprawka zapisu zmian uchwał w logach
+037_agenda_vote_type.sql — jawność/tajność ustalana z góry w porządku obrad; głosowanie musi być zgodne z punktem
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

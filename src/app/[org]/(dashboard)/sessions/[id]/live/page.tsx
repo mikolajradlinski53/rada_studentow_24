@@ -331,20 +331,20 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                     Zakończ punkt
                   </button>
                 )}
-                {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'resolution' && (
+                {isChair && !activeVote && item.status !== 'completed' && (item.item_type === 'resolution' || item.item_type === 'opinion') && (
+                  // Open/secret announced on the agenda -> only that button (migration 037).
                   <div className="flex gap-1.5 pl-7 sm:pl-0">
-                    <button onClick={() => openVote(item, 'open')}
-                      className="rounded-xl px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors active:scale-95">Głosuj jawnie</button>
-                    <button onClick={() => openVote(item, 'secret')}
-                      className="rounded-xl px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors active:scale-95">Głosuj tajnie</button>
-                  </div>
-                )}
-                {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'opinion' && (
-                  <div className="flex gap-1.5 pl-7 sm:pl-0">
-                    <button onClick={() => openVote(item, 'open', 'opinion')}
-                      className="press h-9 rounded-xl bg-teal-600 px-3 text-[13px] font-medium text-white hover:bg-teal-500">Opiniuj jawnie</button>
-                    <button onClick={() => openVote(item, 'secret', 'opinion')}
-                      className="press h-9 rounded-xl bg-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:bg-zinc-600">Opiniuj tajnie</button>
+                    {(['open', 'secret'] as const).filter((t) => !item.vote_type || item.vote_type === t).map((t) => {
+                      const opinion = item.item_type === 'opinion';
+                      return (
+                        <button key={t} onClick={() => openVote(item, t, opinion ? 'opinion' : 'motion')}
+                          className={clsx('press h-9 rounded-xl px-3 text-[13px] font-medium',
+                            t === 'open' ? (opinion ? 'bg-teal-600 text-white hover:bg-teal-500' : 'bg-indigo-600 text-white hover:bg-indigo-500')
+                              : item.vote_type ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600')}>
+                          {opinion ? 'Opiniuj' : 'Głosuj'} {t === 'open' ? 'jawnie' : 'tajnie'}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (

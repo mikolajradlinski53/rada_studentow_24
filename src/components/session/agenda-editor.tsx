@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import { ListPlus, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type { AgendaItem, AgendaItemType } from '@/types/database';
+import type { AgendaItem, AgendaItemType, VoteType } from '@/types/database';
 import { AgendaMaterials } from './agenda-materials';
 import { AgendaComments } from './agenda-comments';
 
@@ -26,6 +26,9 @@ const ITEM_TYPE_TONE: Record<AgendaItemType, string> = {
   information: 'bg-zinc-800 text-zinc-400',
 };
 
+// Items voted on: open/secret is announced with the agenda (migration 037).
+const VOTED: AgendaItemType[] = ['resolution', 'opinion'];
+
 interface AgendaEditorProps {
   sessionId: string;
   initialItems: AgendaItem[];
@@ -42,6 +45,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState<AgendaItemType>('discussion');
+  const [newVoteType, setNewVoteType] = useState<VoteType>('open');
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
@@ -49,16 +53,26 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
     setSaving(true);
     const { data, error } = await createClient()
       .from('agenda_items')
-      .insert({ session_id: sessionId, position: items.length + 1, title: newTitle.trim(), item_type: newType })
+      .insert({
+        session_id: sessionId, position: items.length + 1, title: newTitle.trim(), item_type: newType,
+        vote_type: VOTED.includes(newType) ? newVoteType : null,
+      })
       .select()
       .single();
     if (data && !error) {
       setItems([...items, data]);
       setNewTitle('');
       setNewType('discussion');
+      setNewVoteType('open');
       setShowForm(false);
     }
     setSaving(false);
+  };
+
+  const setVoteType = async (item: AgendaItem, voteType: VoteType) => {
+    const { error } = await createClient().from('agenda_items').update({ vote_type: voteType }).eq('id', item.id);
+    if (error) { alert('Nie udało się zmienić rodzaju głosowania.'); return; }
+    setItems((cur) => cur.map((i) => (i.id === item.id ? { ...i, vote_type: voteType } : i)));
   };
 
   const handleRemove = async (item: AgendaItem) => {
@@ -90,6 +104,13 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
             <span className={clsx('mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium', ITEM_TYPE_TONE[item.item_type])}>
               {ITEM_TYPE_LABELS[item.item_type]}
             </span>
+            {VOTED.includes(item.item_type) && (canManageMaterials ? (
+              <VoteTypePicker value={item.vote_type ?? null} onChange={(v) => setVoteType(item, v)} />
+            ) : item.vote_type ? (
+              <span className="ml-1.5 mt-1.5 inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+                {item.vote_type === 'secret' ? 'Głosowanie tajne' : 'Głosowanie jawne'}
+              </span>
+            ) : null)}
             <AgendaMaterials itemId={item.id} sessionId={sessionId} orgId={orgId}
               canEdit={canManageMaterials} initial={item.attachments ?? []} />
             <AgendaComments itemId={item.id} myMandateId={myMandateId} canModerate={canManageMaterials} />
@@ -134,6 +155,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
                 </button>
               ))}
             </div>
+            {VOTED.includes(newType) && <VoteTypePicker value={newVoteType} onChange={setNewVoteType} />}
             <div className="grid grid-cols-[1fr_2fr] gap-2.5">
               <button
                 onClick={() => { setShowForm(false); setNewTitle(''); }}
@@ -163,6 +185,22 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
           </button>
         )
       )}
+    </div>
+  );
+}
+
+/** Jawne / tajne, announced with the agenda. 
+ull = not set yet (chosen when opening). */
+function VoteTypePicker({ value, onChange }: { value: VoteType | null; onChange: (v: VoteType) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Rodzaj głosowania" className="mt-2 inline-grid grid-cols-2 rounded-xl bg-zinc-950/60 p-1 ring-1 ring-zinc-800">
+      {([['open', 'Jawne'], ['secret', 'Tajne']] as const).map(([v, l]) => (
+        <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(v)}
+          className={clsx('press h-8 rounded-lg px-3.5 text-[13px] font-medium',
+            value === v ? 'bg-zinc-700/80 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-200')}>
+          {l}
+        </button>
+      ))}
     </div>
   );
 }

@@ -137,6 +137,8 @@ export interface AgendaItem {
   position: number;
   title: string;
   item_type: AgendaItemType;
+  /** Announced open/secret for resolution & opinion items; null = chosen when opening. */
+  vote_type?: VoteType | null;
   description: string | null;
   status: AgendaItemStatus;
   discussion_notes: string | null;
