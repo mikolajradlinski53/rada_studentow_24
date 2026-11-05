@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { broadcastPush } from '@/lib/push-client';
+import { failed } from '@/lib/notify';
 
 export function StartSessionButtonClient({ sessionId, org }: { sessionId: string; org: string }) {
   const [loading, setLoading] = useState(false);
@@ -15,10 +16,11 @@ export function StartSessionButtonClient({ sessionId, org }: { sessionId: string
     setLoading(true);
     const supabase = createClient();
 
-    await supabase
+    const { error } = await supabase
       .from('sessions')
       .update({ status: 'in_progress', opened_at: new Date().toISOString() })
       .eq('id', sessionId);
+    if (failed(error, 'Nie udało się otworzyć posiedzenia.')) { setLoading(false); return; }
     await supabase.rpc('log_audit', { p_action: 'session.opened', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
     broadcastPush('session_opened', sessionId);
 

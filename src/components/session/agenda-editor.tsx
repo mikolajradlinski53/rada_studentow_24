@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import { ListPlus, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 import type { AgendaItem, AgendaItemType, VoteType } from '@/types/database';
 import { AgendaMaterials } from './agenda-materials';
 import { AgendaComments } from './agenda-comments';
@@ -77,7 +78,8 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
 
   const handleRemove = async (item: AgendaItem) => {
     if (!confirm(`Usunąć punkt „${item.title}” z porządku obrad?`)) return;
-    await createClient().from('agenda_items').delete().eq('id', item.id);
+    const { error } = await createClient().from('agenda_items').delete().eq('id', item.id);
+    if (failed(error, 'Nie udało się usunąć punktu.')) return;
     setItems(items.filter((i) => i.id !== item.id));
   };
 

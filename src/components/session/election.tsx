@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 import { fetchElectionResults } from '@/lib/use-live-session';
 import { broadcastPush } from '@/lib/push-client';
 import type { AgendaItem, Vote, VoteCandidate, Mandate, ElectionResult, BallotChoice } from '@/types/database';
@@ -21,7 +22,7 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
     const names = text.split('\n').map((s) => s.trim()).filter(Boolean);
     if (names.length < 2) { alert('Podaj co najmniej dwóch kandydatów (po jednym w wierszu).'); return; }
     setBusy(true);
-    const { data: vote } = await supabase.from('votes').insert({
+    const { data: vote, error: ve } = await supabase.from('votes').insert({
       session_id: sessionId,
       agenda_item_id: item.id,
       title: `Wybory: ${item.title}`,
@@ -31,11 +32,13 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
       status: 'open',
       opened_at: now(),
     }).select('id').single();
+    if (failed(ve, ve?.message?.includes('vote_type_mismatch') ? 'Ten punkt ma ustalony inny rodzaj głosowania.' : 'Nie udało się otworzyć wyborów.')) { setBusy(false); return; }
 
     if (vote) {
-      await supabase.from('vote_candidates').insert(
+      const { error: ce } = await supabase.from('vote_candidates').insert(
         names.map((name, i) => ({ vote_id: vote.id, name, position: i }))
       );
+      if (failed(ce, 'Nie udało się zapisać kandydatów. Zamknij to głosowanie i otwórz wybory ponownie.')) { setBusy(false); return; }
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { kind: 'election' } });
       broadcastPush('vote_opened', vote.id); // after candidates exist, so the tap lands on a full ballot
     }
@@ -99,12 +102,13 @@ export function ElectionActive({
     const { error } = await supabase.rpc('cast_election_ballots', {
       p_vote_id: vote.id, p_mandate_id: myMandate.id, p_candidate_ids: selected,
     });
-    if (error) { alert('Nie udało się oddać głosu. Odśwież stronę.'); return; }
+    if (failed(error, error?.message?.includes('vote_not_open') ? 'Wybory zostały już zamknięte.' : error?.message?.includes('duplicate') ? 'Twój głos był już oddany.' : 'Nie udało się oddać głosu.')) return;
     await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { vote_type: 'secret' } });
   };
 
   const close = async () => {
-    await supabase.from('votes').update({ status: 'closed', closed_at: now() }).eq('id', vote.id);
+    const { error } = await supabase.from('votes').update({ status: 'closed', closed_at: now() }).eq('id', vote.id);
+    if (failed(error, 'Nie udało się zamknąć wyborów.')) return;
     await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { kind: 'election' } });
   };
 

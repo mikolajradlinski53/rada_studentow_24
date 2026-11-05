@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { Check, Clock, EyeOff, Lock, Trash2, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 
 export type Poll = {
   id: string; title: string; description: string | null; multi: boolean; hide_names: boolean;
@@ -86,12 +87,14 @@ export function PollCard({ poll, myMandateId, canManage, voters }: { poll: Poll;
 
   const closeNow = async () => {
     if (!confirm('Zakończyć ankietę? Nikt nie będzie mógł już odpowiedzieć.')) return;
-    await createClient().from('polls').update({ closed_at: new Date().toISOString() }).eq('id', poll.id);
+    const { error } = await createClient().from('polls').update({ closed_at: new Date().toISOString() }).eq('id', poll.id);
+    if (failed(error, 'Nie udało się zakończyć ankiety.')) return;
     router.refresh();
   };
   const remove = async () => {
     if (!confirm(`Usunąć ankietę „${poll.title}” razem z odpowiedziami?`)) return;
-    await createClient().from('polls').delete().eq('id', poll.id);
+    const { error } = await createClient().from('polls').delete().eq('id', poll.id);
+    if (failed(error, 'Nie udało się usunąć ankiety.')) return;
     router.refresh();
   };
 

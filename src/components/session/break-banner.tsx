@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 import type { Session } from '@/types/database';
 
 /** mm:ss remaining until an ISO target; null once elapsed. */
@@ -31,7 +32,8 @@ export function BreakBanner({ session, isChair, sessionId }: { session: Session;
   if (!remaining) return null;
 
   const endBreak = async () => {
-    await supabase.from('sessions').update({ on_break_until: null }).eq('id', sessionId);
+    const { error } = await supabase.from('sessions').update({ on_break_until: null }).eq('id', sessionId);
+    failed(error, 'Nie udało się zakończyć przerwy.');
   };
 
   return (

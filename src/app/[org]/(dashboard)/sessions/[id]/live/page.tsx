@@ -22,6 +22,7 @@ import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import { settleMotionVote } from '@/lib/motions';
 import { isVotingRole } from '@/lib/roles';
+import { failed } from '@/lib/notify';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -35,7 +36,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
-    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
   } = useLiveSession(sessionId);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
 
@@ -64,20 +65,24 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   // === ACTIONS ===
   const checkIn = async () => {
     if (!myMandate) return;
-    await supabase.from('attendance').upsert(
+    const { error } = await supabase.from('attendance').upsert(
       { session_id: sessionId, mandate_id: myMandate.id, status: 'present', checked_in_at: new Date().toISOString() },
       { onConflict: 'session_id,mandate_id' }
     );
+    if (failed(error, 'Nie udało się potwierdzić obecności.')) return;
+    void refetch(); // own action: show it now, don't wait for the realtime round
   };
 
   // Current agenda item: starting one completes the previous (projector + highlight follow).
   const setItemStatus = async (item: AgendaItem, status: 'in_progress' | 'completed') => {
     if (status === 'in_progress') {
-      await supabase.from('agenda_items').update({ status: 'completed' })
+      const { error: e1 } = await supabase.from('agenda_items').update({ status: 'completed' })
         .eq('session_id', sessionId).eq('status', 'in_progress').neq('id', item.id);
+      if (failed(e1, 'Nie udało się zakończyć poprzedniego punktu.')) return;
     }
     const { error } = await supabase.from('agenda_items').update({ status }).eq('id', item.id);
-    if (error) alert('Nie udało się zmienić punktu porządku obrad.');
+    if (failed(error, 'Nie udało się zmienić punktu porządku obrad.')) return;
+    void refetch();
   };
 
   const openVote = async (item: AgendaItem, voteType: VoteType, kind: 'motion' | 'opinion' = 'motion') => {
@@ -93,20 +98,23 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
       status: 'open',
       opened_at: new Date().toISOString(),
     }).select('id').single();
-    if (error) { alert('Nie udało się otworzyć głosowania.'); return; }
+    if (failed(error, error?.message?.includes('vote_type_mismatch') ? 'Ten punkt ma ustalony inny rodzaj głosowania (jawne/tajne).' : 'Nie udało się otworzyć głosowania.')) return;
     if (item.status !== 'in_progress') await setItemStatus(item, 'in_progress');
     if (created) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: created.id, p_metadata: { vote_type: voteType } });
       broadcastPush('vote_opened', created.id);
     }
+    void refetch();
   };
 
   const closeVote = async () => {
     if (!activeVote) return;
-    await supabase.rpc('tally_vote', { p_vote_id: activeVote.id });
+    const { error } = await supabase.rpc('tally_vote', { p_vote_id: activeVote.id });
+    if (failed(error, 'Nie udało się zamknąć głosowania.')) return;
     await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: {} });
     // Procedural vote on a formal motion: passed -> enact (e.g. start the break), else reject.
     await settleMotionVote(supabase, sessionId, activeVote.id);
+    void refetch();
   };
 
   const castBallot = async (choice: BallotChoice): Promise<boolean> => {
@@ -114,18 +122,28 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     const { error } = await supabase.rpc('cast_ballot', {
       p_vote_id: activeVote.id, p_mandate_id: myMandate.id, p_choice: choice,
     });
-    if (error) { alert('Nie udało się oddać głosu. Odśwież stronę i spróbuj ponownie.'); return false; }
+    if (error) {
+      const m = error.message ?? '';
+      failed(error, m.includes('vote_not_open') ? 'Głosowanie zostało już zamknięte.'
+        : m.includes('duplicate') ? 'Twój głos był już oddany wcześniej.'
+        : m.includes('not_a_voting_member') ? 'Nie masz prawa głosu w tym głosowaniu.'
+        : 'Nie udało się oddać głosu.');
+      void refetch();
+      return false;
+    }
     navigator.vibrate?.(40);
     // Records participation only (never the choice) — keeps secret votes anonymous.
     await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: { vote_type: activeVote.vote_type } });
+    void refetch();
     return true;
   };
 
   const closeSession = async () => {
     if (!confirm('Zamknąć posiedzenie?')) return;
-    await supabase.from('sessions')
+    const { error } = await supabase.from('sessions')
       .update({ status: 'protocol_pending', closed_at: new Date().toISOString() })
       .eq('id', sessionId);
+    if (failed(error, 'Nie udało się zamknąć posiedzenia.')) return;
     await supabase.rpc('log_audit', { p_action: 'session.closed', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
   };
 

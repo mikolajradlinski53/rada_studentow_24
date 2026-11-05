@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 import { youtubeId, youtubeEmbedUrl } from '@/lib/youtube';
 
 /** Read-only embedded player (used on live page + public transmission). */
@@ -30,7 +31,8 @@ export function Transmission({ org, sessionId, streamUrl, isChair }: { org: stri
 
   const save = async (value: string | null) => {
     setBusy(true);
-    await supabase.from('sessions').update({ stream_url: value }).eq('id', sessionId);
+    const { error } = await supabase.from('sessions').update({ stream_url: value }).eq('id', sessionId);
+    if (failed(error, 'Nie udało się zapisać transmisji.')) return;
     setBusy(false); setEditing(false);
   };
 

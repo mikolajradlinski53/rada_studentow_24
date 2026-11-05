@@ -1,5 +1,6 @@
 'use client';
 
+import { failed } from '@/lib/notify';
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { Hand } from 'lucide-react';
@@ -58,7 +59,7 @@ export function Discussion({
   // === actions ===
   const request = async (kind: FloorRequest['kind'], opts?: { formal_type?: FormalMotionType; minutes?: number; note?: string }) => {
     if (!myMandate) return;
-    await supabase.from('floor_requests').insert({
+    const { error } = await supabase.from('floor_requests').insert({
       session_id: sessionId,
       mandate_id: myMandate.id,
       kind,
@@ -66,25 +67,39 @@ export function Discussion({
       minutes: opts?.minutes ?? null,
       note: opts?.note?.trim() || null,
     });
+    failed(error, 'Nie udało się zgłosić do głosu.');
   };
-  const withdraw = async (id: string) => { await supabase.from('floor_requests').update({ status: 'withdrawn' }).eq('id', id); };
+  const withdraw = async (id: string) => {
+    const { error } = await supabase.from('floor_requests').update({ status: 'withdrawn' }).eq('id', id);
+    failed(error, 'Nie udało się wycofać zgłoszenia.');
+  };
   const callSpeaker = async (id: string) => {
-    await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('session_id', sessionId).eq('status', 'speaking');
-    await supabase.from('floor_requests').update({ status: 'speaking', called_at: now() }).eq('id', id);
+    const { error: e1 } = await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('session_id', sessionId).eq('status', 'speaking');
+    if (failed(e1, 'Nie udało się zakończyć poprzedniej wypowiedzi.')) return;
+    const { error } = await supabase.from('floor_requests').update({ status: 'speaking', called_at: now() }).eq('id', id);
+    failed(error, 'Nie udało się udzielić głosu.');
   };
-  const endSpeaker = async (id: string) => { await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('id', id); };
+  const endSpeaker = async (id: string) => {
+    const { error } = await supabase.from('floor_requests').update({ status: 'done', ended_at: now() }).eq('id', id);
+    failed(error, 'Nie udało się zakończyć wypowiedzi.');
+  };
   const setLimit = async (seconds: number) => {
-    await supabase.from('sessions').update({ speech_limit_seconds: seconds || null }).eq('id', sessionId);
+    const { error } = await supabase.from('sessions').update({ speech_limit_seconds: seconds || null }).eq('id', sessionId);
+    failed(error, 'Nie udało się ustawić limitu wypowiedzi.');
   };
   const addTime = async (r: FloorRequest, seconds: number) => {
-    await supabase.from('floor_requests').update({ extra_seconds: Math.min(3600, (r.extra_seconds ?? 0) + seconds) }).eq('id', r.id);
+    const { error } = await supabase.from('floor_requests').update({ extra_seconds: Math.min(3600, (r.extra_seconds ?? 0) + seconds) }).eq('id', r.id);
+    failed(error, 'Nie udało się dodać czasu.');
   };
-  const reject = async (id: string) => { await supabase.from('floor_requests').update({ status: 'rejected' }).eq('id', id); };
+  const reject = async (id: string) => {
+    const { error } = await supabase.from('floor_requests').update({ status: 'rejected' }).eq('id', id);
+    failed(error, 'Nie udało się odrzucić zgłoszenia.');
+  };
   const acceptMotion = (r: FloorRequest) => enactMotion(supabase, sessionId, r);
   // Turn a formal motion into a quick open procedural vote. The vote remembers
   // the motion (floor_request_id): closing it enacts or rejects it (lib/motions).
   const voteOnMotion = async (r: FloorRequest) => {
-    const { data: vote } = await supabase.from('votes').insert({
+    const { data: vote, error } = await supabase.from('votes').insert({
       session_id: sessionId,
       title: `Wniosek formalny: ${reqLabel(r)}`,
       vote_type: 'open',
@@ -93,6 +108,7 @@ export function Discussion({
       opened_at: now(),
       floor_request_id: r.id,
     }).select('id').single();
+    if (failed(error, 'Nie udało się otworzyć głosowania nad wnioskiem.')) return;
     if (vote) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { procedural: true } });
       broadcastPush('vote_opened', vote.id);

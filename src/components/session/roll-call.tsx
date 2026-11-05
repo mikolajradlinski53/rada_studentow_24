@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
+import { failed } from '@/lib/notify';
 import { toCsv, downloadCsv } from '@/lib/csv';
 import type { AttendanceMode, AttendanceStatus, SessionRsvp } from '@/types/database';
 import type { MandateWithProfile, AttendanceWithMandate } from '@/lib/use-live-session';
@@ -47,11 +48,13 @@ export function RollCall({
     if (status === 'present' || status === 'late') { patch.checked_in_at = now; patch.checked_out_at = null; }
     else if (status === 'left_early') { patch.checked_out_at = now; }
     else { patch.checked_in_at = null; patch.checked_out_at = null; }
-    await supabase.from('attendance').upsert(patch, { onConflict: 'session_id,mandate_id' });
+    const { error } = await supabase.from('attendance').upsert(patch, { onConflict: 'session_id,mandate_id' });
+    failed(error, 'Nie udało się zapisać obecności.');
   };
 
   const setMode = async (next: AttendanceMode) => {
-    await supabase.from('sessions').update({ attendance_mode: next }).eq('id', sessionId);
+    const { error } = await supabase.from('sessions').update({ attendance_mode: next }).eq('id', sessionId);
+    failed(error, 'Nie udało się zmienić trybu obecności.');
   };
 
   const sorted = [...roster].sort((a, b) =>
