@@ -20,10 +20,12 @@ export default async function PollsPage({ params }: { params: Promise<{ org: str
 
   const supabase = await createServerSupabase();
   const [{ data }, { count: voters }] = await Promise.all([
-    supabase.from('polls').select('*, options:poll_options(id, label, position)')
+    // Explicit FK: poll_answers links polls and poll_options too, so a bare
+    // embed is ambiguous for PostgREST (PGRST201) and returned no polls at all.
+    supabase.from('polls').select('*, options:poll_options!poll_options_poll_id_fkey(id, label, position)')
       .eq('term_id', ctx.termId).order('created_at', { ascending: false }),
     supabase.from('mandates').select('id', { count: 'exact', head: true })
-      .eq('term_id', ctx.termId).eq('is_active', true).not('role', 'in', '(admin,auditor,election_committee)'),
+      .eq('term_id', ctx.termId).eq('is_active', true).eq('role', 'member'),
   ]);
   const { open, closed } = splitPolls((data as Poll[]) ?? []);
   const polls = [...open, ...closed];

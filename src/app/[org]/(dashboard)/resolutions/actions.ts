@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getOrgContext } from '@/lib/org';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { buildSignature, titleFromVote, RESOLUTION_BODY_TEMPLATE } from '@/lib/resolution';
+import { buildSignature, titleFromVote, resolutionBody } from '@/lib/resolution';
 import type { ResolutionStatus } from '@/types/database';
 
 type Result = { ok?: true; error?: string; id?: string };
@@ -24,7 +24,7 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
 
   const { data: vote } = await supabase
     .from('votes')
-    .select('id, title, result, session_id, session:sessions(term_id, organ:organs(resolution_prefix, resolution_pattern, short_name, org_id), term:terms(label))')
+    .select('id, title, result, session_id, item:agenda_items(description), session:sessions(term_id, organ:organs(resolution_prefix, resolution_pattern, short_name, org_id), term:terms(label))')
     .eq('id', voteId)
     .maybeSingle();
   if (!vote) return { error: 'Nie znaleziono głosowania' };
@@ -64,7 +64,8 @@ export async function createResolutionFromVote(slug: string, voteId: string): Pr
       number: number as number,
       signature,
       title: titleFromVote(vote.title),
-      body: RESOLUTION_BODY_TEMPLATE,
+      // The draft members voted on (e.g. a circular vote's project) becomes § 1.
+      body: resolutionBody((vote as unknown as { item?: { description?: string | null } | null }).item?.description),
       status: 'draft',
     })
     .select('id')

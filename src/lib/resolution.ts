@@ -15,9 +15,15 @@ export function buildSignature(
 
 /** Default body skeleton for a new resolution. */
 export const RESOLUTION_BODY_TEMPLATE =
-  `§ 1\n\n[treść uchwały — do uzupełnienia]\n\n§ 2\n\nUchwała wchodzi w życie z dniem podjęcia.`;
+  `§ 1\n\n[treść uchwały do uzupełnienia]\n\n§ 2\n\nUchwała wchodzi w życie z dniem podjęcia.`;
 
-/** Strips the "Głosowanie: " prefix the live panel adds to a vote title. */
+/** Body for a new resolution: the draft text members voted on, when there is one. */
+export function resolutionBody(draft: string | null | undefined): string {
+  const text = draft?.trim();
+  return text ? `§ 1\n\n${text}\n\n§ 2\n\nUchwała wchodzi w życie z dniem podjęcia.` : RESOLUTION_BODY_TEMPLATE;
+}
+
+/** Strips the "Głosowanie: " / "Opinia: " prefix the live panel adds to a vote title. */
 export function titleFromVote(voteTitle: string): string {
-  return voteTitle.replace(/^Głosowanie:\s*/i, '').trim();
+  return voteTitle.replace(/^(Głosowanie|Opinia):\s*/i, '').trim();
 }

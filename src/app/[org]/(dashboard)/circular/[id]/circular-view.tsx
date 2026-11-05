@@ -171,7 +171,7 @@ export function CircularView({
         ) : vote?.result ? (
           <div className={clsx('rounded-2xl border p-5 text-center', RESULT_TONE[vote.result])}>
             <div className="flex items-center justify-center gap-2 text-[22px] font-bold">
-              {vote.result === 'passed' ? <Check className="h-6 w-6" strokeWidth={3} /> : <X className="h-6 w-6" strokeWidth={3} />}
+              {vote.result === 'passed' ? <Check className="h-6 w-6" strokeWidth={3} /> : vote.result === 'tie' ? null : <X className="h-6 w-6" strokeWidth={3} />}
               {resultLabel(vote)}
             </div>
             <div className="mt-2 text-[15px] tabular-nums text-zinc-300">
