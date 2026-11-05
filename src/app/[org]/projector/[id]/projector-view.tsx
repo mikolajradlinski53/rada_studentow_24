@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import { Check, Coffee, Maximize, Mic, Minimize, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useLiveSession, castCount, fetchElectionResults } from '@/lib/use-live-session';
-import { VOTE_RESULT_LABEL } from '@/components/session/tally';
+import { resultLabel } from '@/components/session/tally';
 import { NamedBreakdown } from '@/components/session/vote-result';
 import { useCountdown } from '@/components/session/break-banner';
 import { SpeakerTimer } from '@/components/session/speaker-timer';
@@ -15,6 +15,7 @@ const RESULT_STAGE: Record<NonNullable<Vote['result']>, string> = {
   passed: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/40',
   rejected: 'bg-red-500/15 text-red-300 ring-red-500/40',
   no_quorum: 'bg-amber-500/15 text-amber-300 ring-amber-500/40',
+  tie: 'bg-amber-500/15 text-amber-300 ring-amber-500/40',
 };
 
 /** Wall clock for the header (minute resolution is enough on a beamer). */
@@ -44,7 +45,7 @@ function useIdle(ms: number) {
 }
 
 export function ProjectorView({ sessionId }: { sessionId: string }) {
-  const { loading, session, agendaItems, attendance, activeVote, openVoterIds, quorum, presentCount, candidates, floorRequests } =
+  const { loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds, quorum, presentCount, candidates, floorRequests } =
     useLiveSession(sessionId);
   const supabase = createClient();
   const breakRemaining = useCountdown(session?.on_break_until ?? null);
@@ -63,15 +64,8 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
   };
 
   // Last closed vote - shown big between votes (the moment the room looks up).
-  const [lastResult, setLastResult] = useState<Vote | null>(null);
-  useEffect(() => {
-    if (activeVote) return; // showing live vote instead
-    supabase
-      .from('votes').select('*')
-      .eq('session_id', sessionId).eq('status', 'closed')
-      .order('closed_at', { ascending: false }).limit(1).maybeSingle()
-      .then(({ data }) => setLastResult((data as Vote) ?? null));
-  }, [activeVote, sessionId, supabase]);
+  // From the live hook, so a tie resolved by the chair updates on the beamer too.
+  const lastResult: Vote | null = activeVote ? null : closedVotes[0] ?? null;
 
   // Per-candidate results when the last closed vote is an election.
   const [electionResults, setElectionResults] = useState<{ voteId: string; rows: ElectionResult[] } | null>(null);
@@ -155,8 +149,8 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
         ) : activeVote ? (
           <div className="w-full max-w-5xl">
             <div className="mb-10 text-center">
-              <Kicker tone="text-indigo-300">Głosowanie {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'}</Kicker>
-              <div className="mt-3 text-5xl font-semibold leading-tight tracking-tight">{activeVote.title.replace(/^Głosowanie:\s*/i, '')}</div>
+              <Kicker tone="text-indigo-300">{activeVote.vote_kind === 'opinion' ? 'Opiniowanie' : 'Głosowanie'} {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'}</Kicker>
+              <div className="mt-3 text-5xl font-semibold leading-tight tracking-tight">{activeVote.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}</div>
             </div>
 
             <div className="text-center">
@@ -219,11 +213,11 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
           <div className="text-center">
             <Kicker tone="text-zinc-500">Ostatnie głosowanie</Kicker>
             <div className="mx-auto mt-3 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-zinc-200">
-              {lastResult.title.replace(/^(Głosowanie|Wniosek formalny):\s*/i, '')}
+              {lastResult.title.replace(/^(Głosowanie|Opinia|Wniosek formalny):\s*/i, '')}
             </div>
             <div className={clsx('mt-10 inline-block rounded-[2rem] px-16 py-8 text-7xl font-bold tracking-tight ring-2',
               RESULT_STAGE[lastResult.result ?? 'rejected'])}>
-              {VOTE_RESULT_LABEL[lastResult.result ?? 'rejected']}
+              {resultLabel(lastResult)}
             </div>
             <div className="mt-10 flex items-end justify-center gap-14">
               <Score label="Za" value={lastResult.votes_for} tone="text-emerald-300" />

@@ -13,6 +13,7 @@ const ITEM_TYPE_LABELS: Record<AgendaItemType, string> = {
   discussion: 'Dyskusja',
   resolution: 'Uchwała',
   election: 'Wybory',
+  opinion: 'Opinia',
   information: 'Informacja',
 };
 
@@ -21,6 +22,7 @@ const ITEM_TYPE_TONE: Record<AgendaItemType, string> = {
   discussion: 'bg-sky-900/40 text-sky-300',
   resolution: 'bg-indigo-900/40 text-indigo-300',
   election: 'bg-amber-900/40 text-amber-300',
+  opinion: 'bg-emerald-900/40 text-emerald-300',
   information: 'bg-zinc-800 text-zinc-400',
 };
 

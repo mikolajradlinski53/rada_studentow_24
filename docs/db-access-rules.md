@@ -53,7 +53,11 @@ nie przepuści (albo odwrotnie: baza przepuści, czego UI nie pokazuje).
 5. **Tajność to brak danych, nie brak uprawnień.** W głosowaniu tajnym nie zapisuj
    nigdzie pary osoba i wybór, nawet w tabeli bez polityki odczytu (migracja 027).
    Głosowanie jawne pokazuje wybory dopiero po zamknięciu (migracja 028).
-6. **Rejestr zdarzeń bez treści głosu.** `log_audit` zapisuje fakt („oddano głos”),
+6. **Prawo głosu ma tylko radny.** `is_voting_role()` (dziś: rola `member`) decyduje,
+   kto głosuje, melduje obecność i liczy się do kworum. Przewodniczący ma wyłącznie
+   głos rozstrzygający przy remisie (`cast_deciding_vote`), a protokolant, KR i admin
+   nie głosują. W aplikacji to samo robi `isVotingRole()` z `src/lib/roles.ts`.
+7. **Rejestr zdarzeń bez treści głosu.** `log_audit` zapisuje fakt („oddano głos”),
    nigdy wybór.
 
 ## Jak sprawdzić nową regułę

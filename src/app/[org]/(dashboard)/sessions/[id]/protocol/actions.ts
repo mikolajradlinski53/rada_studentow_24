@@ -26,7 +26,7 @@ async function canManage(slug: string, sessionId: string) {
   return null;
 }
 
-export async function generateProtocol(slug: string, sessionId: string): Promise<Result> {
+export async function generateProtocol(slug: string, sessionId: string): Promise<Result & { body?: string }> {
   const ctx = await canManage(slug, sessionId);
   if (!ctx) return { error: 'Brak uprawnień' };
 
@@ -55,7 +55,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
 
   const { data: votes } = await supabase
     .from('votes')
-    .select('id, title, vote_type, result, votes_for, votes_against, votes_abstain')
+    .select('id, title, vote_type, vote_kind, deciding_vote, result, votes_for, votes_against, votes_abstain')
     .eq('session_id', sessionId)
     .eq('status', 'closed')
     .order('closed_at');
@@ -74,7 +74,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
   const voteData: ProtocolData['votes'] = [];
   for (const v of votes ?? []) {
     const entry: ProtocolData['votes'][number] = {
-      title: v.title, voteType: v.vote_type, result: v.result,
+      title: v.title, voteType: v.vote_type, voteKind: v.vote_kind, deciding: v.deciding_vote, result: v.result,
       forN: v.votes_for, against: v.votes_against, abstain: v.votes_abstain,
     };
     if (v.vote_type === 'open') {
@@ -117,7 +117,8 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
 
   await supabase.rpc('log_audit', { p_action: 'protocol.generated', p_target_type: 'session', p_target_id: sessionId, p_metadata: {} });
   revalidatePath(`/${slug}/sessions/${sessionId}/protocol`);
-  return { ok: true };
+  // The editor keeps its own text state - hand it the new skeleton directly.
+  return { ok: true, body };
 }
 
 export async function saveProtocol(slug: string, sessionId: string, body: string, status: ProtocolStatus): Promise<Result> {

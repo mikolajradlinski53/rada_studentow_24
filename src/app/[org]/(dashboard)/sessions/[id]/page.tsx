@@ -7,13 +7,14 @@ import { AgendaEditor } from '@/components/session/agenda-editor';
 import { StartSessionButtonClient } from '@/components/session/start-session-button';
 import { CreateResolutionButton } from '@/components/session/create-resolution-button';
 import { getOrgContext } from '@/lib/org';
+import { isVotingRole } from '@/lib/roles';
 import { plLong } from '@/lib/dates';
 import type { SessionRsvp, SessionStatus } from '@/types/database';
 import { SessionRsvpCard } from '@/components/session/session-rsvp';
 
 const STATUS: Record<SessionStatus, { label: string; tone: string }> = {
   draft: { label: 'Szkic', tone: 'bg-zinc-800 text-zinc-400' },
-  scheduled: { label: 'Zaplanowane', tone: 'bg-blue-900/40 text-blue-300' },
+  scheduled: { label: 'Zaplanowane', tone: 'bg-sky-900/40 text-sky-300' },
   in_progress: { label: 'Trwa', tone: 'bg-emerald-900/50 text-emerald-300' },
   closed: { label: 'Zakończone', tone: 'bg-zinc-800 text-zinc-400' },
   protocol_pending: { label: 'Protokół w przygotowaniu', tone: 'bg-amber-900/40 text-amber-300' },
@@ -63,9 +64,9 @@ export default async function SessionDetailPage({
   const status = STATUS[session.status as SessionStatus];
   const upcoming = session.status === 'scheduled' || session.status === 'draft';
 
-  // Voting members: Komisja Rewizyjna, SKW and system admins aren't seats in the organ.
+  // Voting members = councillors (chair, protokolant, KR, SKW, admins hold no seat).
   const voters = ((roster as unknown as { id: string; role: string; profile: { full_name: string } | null }[]) ?? [])
-    .filter((m) => !['auditor', 'election_committee', 'admin'].includes(m.role))
+    .filter((m) => isVotingRole(m.role))
     .map((m) => ({ mandateId: m.id, name: m.profile?.full_name ?? '-' }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
   const organQ = (session as { organ?: { total_seats?: number; quorum_type?: string; quorum_value?: number | null } }).organ;

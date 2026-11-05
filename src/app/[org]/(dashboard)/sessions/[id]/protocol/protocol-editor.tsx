@@ -78,7 +78,12 @@ export function ProtocolEditor({
 
   const generate = () => {
     if (hasProtocol && !confirm('Wygenerować szkielet ponownie? Nadpisze obecną treść.')) return;
-    run(() => generateProtocol(org, sessionId));
+    // The textarea state was seeded once from initialBody; a refresh alone won't refill it.
+    run(async () => {
+      const res = await generateProtocol(org, sessionId);
+      if (res.body !== undefined) { setBody(res.body); setStatus('draft'); }
+      return res;
+    });
   };
 
   return (

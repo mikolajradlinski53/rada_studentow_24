@@ -55,7 +55,7 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
     <div className="mt-2 w-full space-y-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-3">
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4}
         placeholder={'Kandydaci, jeden w wierszu:\nJan Kowalski\nAnna Nowak'}
-        className="w-full h-11 rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 text-[15px] text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
+        className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 py-2.5 text-[15px] leading-relaxed text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none" />
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-zinc-400">Miejsca do obsadzenia</label>
         <input type="number" min={1} max={20} value={seats} onChange={(e) => setSeats(Math.max(1, Number(e.target.value)))}

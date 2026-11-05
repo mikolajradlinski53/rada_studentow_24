@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import { Check } from 'lucide-react';
 import { castCount } from '@/lib/use-live-session';
+import { choiceLabels } from '@/components/session/tally';
 import type { Vote, BallotChoice, Mandate } from '@/types/database';
 
-const CHOICE_LABEL: Record<BallotChoice, string> = { for: 'ZA', against: 'PRZECIW', abstain: 'WSTRZYMUJĘ SIĘ' };
 const CHOICE_STYLE: Record<BallotChoice, string> = {
   for: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30',
   against: 'bg-red-600 hover:bg-red-500 shadow-red-900/30',
@@ -33,6 +33,8 @@ export function MotionVoteCard({
   const [picked, setPicked] = useState<BallotChoice | null>(null);
   const [busy, setBusy] = useState(false);
   const cast = castCount(vote);
+  const CHOICE_LABEL = choiceLabels(vote.vote_kind);
+  const what = vote.vote_kind === 'opinion' ? 'Opiniowanie' : 'Głosowanie';
 
   const confirm = async () => {
     if (!picked) return;
@@ -48,12 +50,12 @@ export function MotionVoteCard({
         <div className="flex min-w-0 items-center gap-2">
           <div className="h-2 w-2 shrink-0 rounded-full bg-indigo-400 animate-pulse" />
           <h2 className="truncate text-[13px] font-semibold uppercase tracking-wide text-indigo-300">
-            Głosowanie {vote.vote_type === 'secret' ? 'tajne' : 'jawne'}
+            {what} {vote.vote_type === 'secret' ? 'tajne' : 'jawne'}
           </h2>
         </div>
         <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{cast} / {presentCount} głosów</span>
       </div>
-      <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{vote.title.replace(/^Głosowanie:\s*/i, '')}</p>
+      <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{vote.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}</p>
 
       {/* Live: turnout only. The breakdown appears when the vote is closed. */}
       <div className="rounded-2xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">

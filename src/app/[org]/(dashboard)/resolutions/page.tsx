@@ -10,7 +10,7 @@ import { SearchBox, searchPattern } from '@/components/ui/search-box';
 const STATUS: Record<ResolutionStatus, { label: string; tone: string }> = {
   draft: { label: 'Szkic', tone: 'bg-zinc-800 text-zinc-400' },
   adopted: { label: 'Uchwalona', tone: 'bg-emerald-900/50 text-emerald-300' },
-  published: { label: 'Opublikowana', tone: 'bg-blue-900/40 text-blue-300' },
+  published: { label: 'Opublikowana', tone: 'bg-sky-900/40 text-sky-300' },
   revoked: { label: 'Uchylona', tone: 'bg-red-900/40 text-red-300' },
 };
 

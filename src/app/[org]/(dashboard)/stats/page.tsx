@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { clsx } from 'clsx';
 import { BarChart3, ChevronLeft } from 'lucide-react';
 import { getOrgContext } from '@/lib/org';
+import { isVotingRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 type Row = {
@@ -11,7 +12,7 @@ type Row = {
 };
 
 // Seats of the organ: Komisja Rewizyjna, SKW, protokolant and system admins aren't counted.
-const NON_SEAT = ['auditor', 'election_committee', 'secretary', 'admin'];
+
 
 function pct(a: number, b: number) {
   return b > 0 ? Math.round((a / b) * 100) : null;
@@ -25,7 +26,7 @@ export default async function StatsPage({ params }: { params: Promise<{ org: str
   const supabase = await createServerSupabase();
   const { data } = await supabase.rpc('term_member_stats', { p_term_id: ctx.termId });
   const all = ((data as Row[] | null) ?? []).sort((a, b) => a.full_name.localeCompare(b.full_name, 'pl'));
-  const rows = all.filter((r) => !NON_SEAT.includes(r.role));
+  const rows = all.filter((r) => isVotingRole(r.role));
 
   const sittings = all[0]?.sittings_total ?? 0;
   const votes = all[0]?.votes_total ?? 0;

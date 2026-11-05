@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { isVotingRole } from '@/lib/roles';
 import type {
   Session, AgendaItem, Vote, Attendance, Mandate, Profile, FloorRequest,
   VoteCandidate, ElectionResult, BallotChoice, QuorumInfo,
@@ -17,6 +18,8 @@ export interface LiveSessionData {
   agendaItems: AgendaItem[];
   attendance: AttendanceWithMandate[];
   activeVote: Vote | null;
+  /** Closed votes of the sitting, newest first (live: refreshed on every vote change). */
+  closedVotes: Vote[];
   /** Mandates that already voted in the active OPEN vote (who, not how - choices
    *  are revealed only at close, migration 028); empty for secret votes. */
   openVoterIds: string[];
@@ -75,6 +78,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [attendance, setAttendance] = useState<AttendanceWithMandate[]>([]);
   const [activeVote, setActiveVote] = useState<Vote | null>(null);
+  const [closedVotes, setClosedVotes] = useState<Vote[]>([]);
   const [openVoterIds, setOpenVoterIds] = useState<string[]>([]);
   const [myMandate, setMyMandate] = useState<Mandate | null>(null);
   const [myBallot, setMyBallot] = useState<BallotChoice | null>(null);
@@ -87,96 +91,81 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   const supabase = createClient();
 
+  // Realtime bursts (a vote opening, candidates, many ballots) fire overlapping
+  // refetches. Only the newest one may write state - otherwise a slower, older
+  // response lands last and e.g. wipes the candidates of a just-opened election.
+  const seq = useRef(0);
+
   const refetch = useCallback(async () => {
     if (!sessionId) return;
+    const mine = ++seq.current;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Wave 1: everything that only needs the session id.
+    const [
+      { data: { user } }, { data: sess }, { data: items }, { data: pa },
+      { data: att }, { data: q }, { data: fr }, { data: vote }, { data: closed },
+    ] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle(),
+      supabase.from('agenda_items').select('*').eq('session_id', sessionId).order('position'),
+      supabase.rpc('is_platform_admin'),
+      supabase.from('attendance').select('*, mandate:mandates(*, profile:profiles(*))').eq('session_id', sessionId),
+      supabase.rpc('calculate_quorum', { p_session_id: sessionId }),
+      supabase.from('floor_requests').select('*, mandate:mandates(*, profile:profiles(*))')
+        .eq('session_id', sessionId).in('status', ['waiting', 'speaking']).order('created_at'),
+      supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'open').limit(1).maybeSingle(),
+      supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'closed').order('closed_at', { ascending: false }),
+    ]);
+    const openVote = vote as Vote | null;
 
-    const { data: sess } = await supabase
-      .from('sessions').select('*').eq('id', sessionId).maybeSingle();
-    setSession(sess);
-
-    const { data: items } = await supabase
-      .from('agenda_items').select('*').eq('session_id', sessionId).order('position');
-    setAgendaItems(items ?? []);
-
-    let mandate: Mandate | null = null;
-    if (user && sess?.term_id) {
+    // Wave 2: depends on the user, the sitting's term and the open vote.
+    const termId = (sess as Session | null)?.term_id;
+    const [mandateRes, rosterRes, votersRes, candsRes] = await Promise.all([
       // Scoped to this sitting's term (a person can hold mandates in several orgs/terms).
-      const { data } = await supabase
-        .from('mandates').select('*')
-        .eq('profile_id', user.id).eq('term_id', sess.term_id).eq('is_active', true).limit(1).maybeSingle();
-      mandate = data;
-    }
-    setMyMandate(mandate);
-    const { data: pa } = await supabase.rpc('is_platform_admin');
-    setIsPlatformAdmin(pa === true);
+      user && termId
+        ? supabase.from('mandates').select('*').eq('profile_id', user.id).eq('term_id', termId).eq('is_active', true).limit(1).maybeSingle()
+        : Promise.resolve({ data: null }),
+      termId
+        ? supabase.from('mandates').select('*, profile:profiles(*)').eq('term_id', termId).eq('is_active', true)
+        : Promise.resolve({ data: null }),
+      // Who has voted in an OPEN vote. Choices stay hidden until close (RLS).
+      openVote?.vote_type === 'open'
+        ? supabase.rpc('open_vote_voters', { p_vote_id: openVote.id })
+        : Promise.resolve({ data: [] }),
+      openVote?.vote_kind === 'election'
+        ? supabase.from('vote_candidates').select('*').eq('vote_id', openVote.id).order('position')
+        : Promise.resolve({ data: [] }),
+    ]);
+    const mandate = (mandateRes.data as Mandate | null) ?? null;
 
-    const { data: att } = await supabase
-      .from('attendance')
-      .select('*, mandate:mandates(*, profile:profiles(*))')
-      .eq('session_id', sessionId);
-    setAttendance((att as AttendanceWithMandate[]) ?? []);
-
-    if (sess?.term_id) {
-      const { data: roster } = await supabase
-        .from('mandates')
-        .select('*, profile:profiles(*)')
-        .eq('term_id', sess.term_id)
-        .eq('is_active', true);
-      setRoster((roster as MandateWithProfile[]) ?? []);
-    }
-
-    const { data: q } = await supabase.rpc('calculate_quorum', { p_session_id: sessionId });
-    setQuorum(q as QuorumInfo | null);
-
-    const { data: fr } = await supabase
-      .from('floor_requests')
-      .select('*, mandate:mandates(*, profile:profiles(*))')
-      .eq('session_id', sessionId)
-      .in('status', ['waiting', 'speaking'])
-      .order('created_at');
-    setFloorRequests(orderQueue((fr as FloorRequest[]) ?? []));
-
-    const { data: vote } = await supabase
-      .from('votes').select('*')
-      .eq('session_id', sessionId).eq('status', 'open').limit(1).maybeSingle();
-    setActiveVote(vote);
-
-    // Who has voted in an OPEN vote. Choices stay hidden until close (RLS).
-    if (vote && vote.vote_type === 'open') {
-      const { data: voters } = await supabase.rpc('open_vote_voters', { p_vote_id: vote.id });
-      setOpenVoterIds(((voters as { mandate_id: string }[]) ?? []).map((r) => r.mandate_id));
-    } else {
-      setOpenVoterIds([]);
-    }
-
-    // Candidates for an active election.
-    if (vote && vote.vote_kind === 'election') {
-      const { data: cands } = await supabase
-        .from('vote_candidates').select('*').eq('vote_id', vote.id).order('position');
-      setCandidates((cands as VoteCandidate[]) ?? []);
-    } else {
-      setCandidates([]);
-    }
-
-    // Have I already voted?
-    if (vote && mandate) {
-      if (vote.vote_type === 'open') {
-        const { data: ballot } = await supabase
-          .from('ballots').select('choice')
-          .eq('vote_id', vote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
-        setMyBallot((ballot?.choice as BallotChoice) ?? null);
+    // Wave 3: have I already voted?
+    let ballot: BallotChoice | null = null;
+    if (openVote && mandate) {
+      if (openVote.vote_type === 'open') {
+        const { data } = await supabase.from('ballots').select('choice')
+          .eq('vote_id', openVote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
+        ballot = (data?.choice as BallotChoice) ?? null;
       } else {
-        const { data: receipt } = await supabase
-          .from('secret_ballot_receipts').select('id')
-          .eq('vote_id', vote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
-        setMyBallot(receipt ? 'for' : null);
+        const { data } = await supabase.from('secret_ballot_receipts').select('id')
+          .eq('vote_id', openVote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
+        ballot = data ? 'for' : null;
       }
-    } else {
-      setMyBallot(null);
     }
 
+    if (mine !== seq.current) return; // a newer refetch is on its way
+    setSession(sess);
+    setAgendaItems(items ?? []);
+    setIsPlatformAdmin(pa === true);
+    setAttendance((att as AttendanceWithMandate[]) ?? []);
+    setQuorum(q as QuorumInfo | null);
+    setFloorRequests(orderQueue((fr as FloorRequest[]) ?? []));
+    setActiveVote(openVote);
+    setClosedVotes((closed as Vote[]) ?? []);
+    setMyMandate(mandate);
+    if (termId) setRoster((rosterRes.data as MandateWithProfile[]) ?? []);
+    setOpenVoterIds(((votersRes.data as { mandate_id: string }[]) ?? []).map((r) => r.mandate_id));
+    setCandidates((candsRes.data as VoteCandidate[]) ?? []);
+    setMyBallot(ballot);
     setLoading(false);
   }, [sessionId, supabase]);
 
@@ -188,25 +177,29 @@ export function useLiveSession(sessionId: string): LiveSessionData {
 
   useEffect(() => {
     if (!sessionId) return;
+    // Coalesce bursts (20 ballots in a few seconds) into one reload per ~150 ms.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const kick = () => { clearTimeout(timer); timer = setTimeout(() => { void refetch(); }, 150); };
     const channel = supabase
       .channel(`session-${sessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ballots' }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ballots' }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, kick)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { clearTimeout(timer); supabase.removeChannel(channel); };
   }, [sessionId, supabase, refetch]);
 
+  // Seat holders only - matches calculate_quorum (KR / protokolant don't count).
   const presentCount = attendance.filter(
-    (a) => a.status === 'present' || a.status === 'late'
+    (a) => (a.status === 'present' || a.status === 'late') && isVotingRole(a.mandate?.role)
   ).length;
 
   return {
-    loading, session, agendaItems, attendance, activeVote, openVoterIds,
+    loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
   };
 }

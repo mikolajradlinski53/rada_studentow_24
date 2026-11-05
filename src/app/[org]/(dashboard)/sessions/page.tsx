@@ -11,7 +11,7 @@ import { NotificationNudge } from '@/components/pwa/notification-toggle';
 
 const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string }> = {
   draft: { label: 'Szkic', color: 'bg-zinc-800 text-zinc-400' },
-  scheduled: { label: 'Zaplanowane', color: 'bg-blue-900/40 text-blue-300' },
+  scheduled: { label: 'Zaplanowane', color: 'bg-sky-900/40 text-sky-300' },
   in_progress: { label: 'Trwa', color: 'bg-emerald-900/50 text-emerald-300' },
   closed: { label: 'Zakończone', color: 'bg-zinc-800 text-zinc-400' },
   protocol_pending: { label: 'Protokół', color: 'bg-amber-900/40 text-amber-300' },

@@ -18,6 +18,9 @@ export interface ProtocolData {
   votes: {
     title: string;
     voteType: string;
+    /** 'opinion' prints as opinia pozytywna / negatywna; deciding = chair's casting vote on a tie. */
+    voteKind?: string;
+    deciding?: string | null;
     result: string | null;
     forN: number;
     against: number;
@@ -28,7 +31,7 @@ export interface ProtocolData {
 }
 
 const PRESENT: AttendanceStatus[] = ['present', 'late'];
-const RESULT_PL: Record<string, string> = { passed: 'PRZYJĘTO', rejected: 'ODRZUCONO', no_quorum: 'BRAK KWORUM' };
+const RESULT_PL: Record<string, string> = { passed: 'PRZYJĘTO', rejected: 'ODRZUCONO', no_quorum: 'BRAK KWORUM', tie: 'REMIS (oczekuje na głos rozstrzygający)' };
 
 function fmt(iso: string | null, pattern: string): string {
   if (!iso) return '—';
@@ -94,7 +97,9 @@ export function buildProtocolMarkdown(d: ProtocolData): string {
     L.push('_Nie przeprowadzono głosowań._');
   } else {
     d.votes.forEach((v, i) => {
-      const res = v.result ? RESULT_PL[v.result] ?? v.result : '—';
+      const opinion = v.voteKind === 'opinion';
+      const res = (v.result ? (opinion && v.result === 'passed' ? 'OPINIA POZYTYWNA' : opinion && v.result === 'rejected' ? 'OPINIA NEGATYWNA' : RESULT_PL[v.result] ?? v.result) : '-')
+        + (v.deciding ? ` (remis rozstrzygnięty głosem przewodniczącego: ${v.deciding === 'for' ? 'za' : 'przeciw'})` : '');
       L.push('');
       L.push(`**${i + 1}. ${v.title}** (${v.voteType === 'secret' ? 'tajne' : 'jawne'})`);
       L.push(`Za: ${v.forN} · Przeciw: ${v.against} · Wstrzymujące się: ${v.abstain} → **${res}**`);

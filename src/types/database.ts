@@ -7,13 +7,14 @@ export type SessionMode = 'in_person' | 'remote' | 'hybrid';
 export type SessionStatus = 'draft' | 'scheduled' | 'in_progress' | 'closed' | 'protocol_pending' | 'archived';
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused' | 'left_early';
 export type AttendanceMode = 'self' | 'chair';
-export type AgendaItemType = 'procedural' | 'discussion' | 'resolution' | 'election' | 'information';
+export type AgendaItemType = 'procedural' | 'discussion' | 'resolution' | 'election' | 'information' | 'opinion';
 export type AgendaItemStatus = 'pending' | 'in_progress' | 'completed' | 'postponed';
 export type VoteType = 'open' | 'secret';
-export type VoteKind = 'motion' | 'election';
+export type VoteKind = 'motion' | 'election' | 'opinion';
 export type VoteThreshold = 'simple_majority' | 'absolute_majority' | 'two_thirds';
 export type VoteStatus = 'pending' | 'open' | 'closed' | 'cancelled';
-export type VoteResult = 'passed' | 'rejected' | 'no_quorum';
+/** 'tie' = simple-majority tie, waiting for the chair's casting vote (migration 033). */
+export type VoteResult = 'passed' | 'rejected' | 'no_quorum' | 'tie';
 export type BallotChoice = 'for' | 'against' | 'abstain';
 export type ResolutionStatus = 'draft' | 'adopted' | 'published' | 'revoked';
 export type ProtocolStatus = 'draft' | 'review' | 'approved' | 'published';
@@ -176,6 +177,9 @@ export interface Vote {
   total_eligible: number;
   secret_cast_count: number;
   result: VoteResult | null;
+  /** Chair's casting vote on a tie. */
+  deciding_vote?: 'for' | 'against' | null;
+  deciding_by?: string | null;
   created_at: string;
   // Joined
   ballots?: Ballot[];

@@ -11,8 +11,9 @@ import { PendingVoters } from '@/components/session/pending-voters';
 import { AgendaMaterials } from '@/components/session/agenda-materials';
 import { AgendaComments } from '@/components/session/agenda-comments';
 import { CreateResolutionButton } from '@/components/session/create-resolution-button';
-import { VOTE_RESULT_LABEL } from '@/components/session/tally';
-import { NamedBreakdown } from '@/components/session/vote-result';
+import { resultLabel } from '@/components/session/tally';
+import { NamedBreakdown, DecidingVote } from '@/components/session/vote-result';
+import { isVotingRole } from '@/lib/roles';
 import type { BallotChoice, Vote } from '@/types/database';
 
 function useNow(ms: number) {
@@ -38,6 +39,7 @@ const RESULT_TONE: Record<NonNullable<Vote['result']>, string> = {
   passed: 'border-emerald-700/60 bg-emerald-950/30 text-emerald-300',
   rejected: 'border-red-800/60 bg-red-950/30 text-red-300',
   no_quorum: 'border-amber-800/60 bg-amber-950/30 text-amber-300',
+  tie: 'border-amber-800/60 bg-amber-950/30 text-amber-300',
 };
 
 export function CircularView({
@@ -59,7 +61,7 @@ export function CircularView({
     if (!sessionId) return;
     supabase.from('votes').select('*').eq('session_id', sessionId).order('opened_at').limit(1).maybeSingle()
       .then(({ data }) => setVote((data as Vote) ?? null));
-  }, [sessionId, supabase, live.activeVote?.id, live.activeVote?.secret_cast_count, openVoterIds.length, session?.status]);
+  }, [sessionId, supabase, live.activeVote?.id, live.activeVote?.secret_cast_count, live.closedVotes, session?.status]);
 
   if (loading || !session) {
     return <div className="h-64 animate-pulse rounded-2xl bg-zinc-900/60" />;
@@ -92,7 +94,7 @@ export function CircularView({
 
   // Everyone with a seat is "present" for a circular vote (no roll call).
   const everyone = live.roster
-    .filter((m) => !['auditor', 'election_committee', 'admin', 'secretary'].includes(m.role))
+    .filter((m) => isVotingRole(m.role))
     .map((m) => ({ id: m.id, session_id: sessionId, mandate_id: m.id, status: 'present' as const, mandate: m }));
 
   return (
@@ -170,7 +172,7 @@ export function CircularView({
           <div className={clsx('rounded-2xl border p-5 text-center', RESULT_TONE[vote.result])}>
             <div className="flex items-center justify-center gap-2 text-[22px] font-bold">
               {vote.result === 'passed' ? <Check className="h-6 w-6" strokeWidth={3} /> : <X className="h-6 w-6" strokeWidth={3} />}
-              {VOTE_RESULT_LABEL[vote.result]}
+              {resultLabel(vote)}
             </div>
             <div className="mt-2 text-[15px] tabular-nums text-zinc-300">
               Za {vote.votes_for} · Przeciw {vote.votes_against} · Wstrzymało się {vote.votes_abstain}
@@ -178,6 +180,7 @@ export function CircularView({
             {vote.result === 'no_quorum' && (
               <p className="mt-1 text-[13px] text-zinc-400">Zagłosowało {cast} z wymaganych {required}.</p>
             )}
+            <div className="text-left"><DecidingVote vote={vote} canDecide={myMandate?.role === 'chair'} /></div>
             {vote.vote_type === 'open' && (
               <div className="mt-4 text-left">
                 <h3 className="mb-2 text-[13px] font-medium text-zinc-400">Kto jak głosował</h3>

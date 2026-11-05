@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { clsx } from 'clsx';
 import { useLiveSession } from '@/lib/use-live-session';
-import { VOTE_RESULT_LABEL, RESULT_TONE } from '@/components/session/tally';
+import { RESULT_TONE, resultLabel } from '@/components/session/tally';
 import { Discussion } from '@/components/session/discussion';
 import { RollCall } from '@/components/session/roll-call';
 import { ElectionOpener, ElectionActive, ElectionResultRow } from '@/components/session/election';
@@ -21,6 +21,7 @@ import { Check, MonitorUp, Square, X } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import { settleMotionVote } from '@/lib/motions';
+import { isVotingRole } from '@/lib/roles';
 import type { AgendaItem, Vote, BallotChoice, VoteType } from '@/types/database';
 
 export default function LiveSessionPage({ params }: { params: Promise<{ org: string; id: string }> }) {
@@ -33,19 +34,10 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   }, [params]);
 
   const {
-    loading, session, agendaItems, attendance, activeVote, openVoterIds,
+    loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin,
   } = useLiveSession(sessionId);
-
-  // Closed votes of this sitting, reloaded whenever a vote opens or closes.
-  const [closedVotes, setClosedVotes] = useState<Vote[]>([]);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
-  const activeVoteId = activeVote?.id ?? null;
-  useEffect(() => {
-    if (!sessionId) return;
-    supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'closed')
-      .order('closed_at', { ascending: false }).then(({ data }) => setClosedVotes((data as Vote[]) ?? []));
-  }, [sessionId, supabase, activeVoteId]);
 
   const isChair =
     isPlatformAdmin ||
@@ -78,15 +70,31 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     );
   };
 
-  const openVote = async (item: AgendaItem, voteType: VoteType) => {
-    const { data: created } = await supabase.from('votes').insert({
+  // Current agenda item: starting one completes the previous (projector + highlight follow).
+  const setItemStatus = async (item: AgendaItem, status: 'in_progress' | 'completed') => {
+    if (status === 'in_progress') {
+      await supabase.from('agenda_items').update({ status: 'completed' })
+        .eq('session_id', sessionId).eq('status', 'in_progress').neq('id', item.id);
+    }
+    const { error } = await supabase.from('agenda_items').update({ status }).eq('id', item.id);
+    if (error) alert('Nie udało się zmienić punktu porządku obrad.');
+  };
+
+  const openVote = async (item: AgendaItem, voteType: VoteType, kind: 'motion' | 'opinion' = 'motion') => {
+    // A second vote on the same item is legitimate only as a deliberate re-vote.
+    if (closedVotes.some((v) => v.agenda_item_id === item.id)
+      && !confirm('Ten punkt był już głosowany. Otworzyć ponowne głosowanie (reasumpcja)?')) return;
+    const { data: created, error } = await supabase.from('votes').insert({
       session_id: sessionId,
       agenda_item_id: item.id,
-      title: `Głosowanie: ${item.title}`,
+      title: `${kind === 'opinion' ? 'Opinia' : 'Głosowanie'}: ${item.title}`,
       vote_type: voteType,
+      vote_kind: kind,
       status: 'open',
       opened_at: new Date().toISOString(),
     }).select('id').single();
+    if (error) { alert('Nie udało się otworzyć głosowania.'); return; }
+    if (item.status !== 'in_progress') await setItemStatus(item, 'in_progress');
     if (created) {
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: created.id, p_metadata: { vote_type: voteType } });
       broadcastPush('vote_opened', created.id);
@@ -138,6 +146,8 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const myAttendance = attendance.find((a) => a.mandate_id === myMandate?.id);
   const isCheckedIn = myAttendance?.status === 'present' || myAttendance?.status === 'late';
+  // KR, protokolant, admin take part without a vote (migration 032).
+  const canVote = isVotingRole(myMandate?.role);
   const eligible = quorum?.total_seats ?? presentCount;
 
   // mandate_id -> name, for open-vote voter chips
@@ -197,14 +207,22 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           />
         </div>
 
-        {myMandate && !isCheckedIn && session.attendance_mode === 'self' && (
+        {/* Only councillors check in; chair, protokolant, KR, admin aren't on the list. */}
+        {canVote && !isCheckedIn && session.attendance_mode === 'self' && (
           <button onClick={checkIn}
             className="mt-3 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-900/30 transition-transform hover:bg-emerald-500 active:scale-[0.98]">
             Potwierdź obecność
           </button>
         )}
-        {myMandate && !isCheckedIn && session.attendance_mode === 'chair' && (
+        {canVote && !isCheckedIn && session.attendance_mode === 'chair' && (
           <div className="mt-2 text-xs text-zinc-500">Obecność potwierdza prowadzący.</div>
+        )}
+        {myMandate && !canVote && (
+          <div className="mt-2 text-xs text-zinc-500">
+            {myMandate.role === 'chair'
+              ? 'Prowadzisz obrady bez głosu; przy remisie rozstrzygasz głosowanie.'
+              : 'Uczestniczysz bez prawa głosu.'}
+          </div>
         )}
         {isCheckedIn && (
           <div className="mt-2.5 flex items-center gap-1.5 text-[13px] text-emerald-400">
@@ -220,9 +238,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
             <ElectionActive
               vote={activeVote}
               candidates={candidates}
-              myMandate={myMandate}
+              myMandate={canVote ? myMandate : null}
               myBallot={myBallot}
-              isCheckedIn={isCheckedIn}
+              isCheckedIn={isCheckedIn && canVote}
               isChair={isChair}
               presentCount={presentCount}
             />
@@ -232,8 +250,8 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
               vote={activeVote}
               voterIds={openVoterIds}
               myBallot={myBallot}
-              myMandate={myMandate}
-              isCheckedIn={isCheckedIn}
+              myMandate={canVote ? myMandate : null}
+              isCheckedIn={isCheckedIn && canVote}
               isChair={isChair}
               presentCount={presentCount}
               nameByMandate={nameByMandate}
@@ -252,7 +270,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
       {/* Just closed: the numbers, then who voted how (open votes) */}
       {!activeVote && lastMotion && lastMotion.id !== dismissedId && (
         <div>
-          <ClosedVoteCard vote={lastMotion} eligible={eligible} />
+          <ClosedVoteCard vote={lastMotion} eligible={eligible} canDecide={myMandate?.role === 'chair'} />
           <button onClick={() => setDismissedId(lastMotion.id)}
             className="press mt-2 inline-flex h-9 items-center gap-1 rounded-xl px-2.5 text-[13px] text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300">
             <X className="h-3.5 w-3.5" /> Ukryj wynik
@@ -264,7 +282,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
       {isChair && (
         <RollCall
           sessionId={sessionId}
-          roster={roster}
+          roster={roster.filter((m) => isVotingRole(m.role))}
           attendance={attendance}
           mode={session.attendance_mode}
         />
@@ -297,13 +315,36 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                 <div className="flex min-w-0 items-start gap-2">
                   <span className="w-5 shrink-0 pt-px text-xs text-zinc-500">{idx + 1}.</span>
                   <span className="text-sm text-zinc-200">{item.title}</span>
+                  {item.status === 'in_progress' && (
+                    <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white">Teraz</span>
+                  )}
                 </div>
+                {isChair && session.status === 'in_progress' && !activeVote && item.status !== 'in_progress' && item.status !== 'completed' && (
+                  <button onClick={() => setItemStatus(item, 'in_progress')}
+                    className="press h-9 rounded-xl border border-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:border-zinc-500">
+                    Rozpocznij punkt
+                  </button>
+                )}
+                {isChair && !activeVote && item.status === 'in_progress' && (
+                  <button onClick={() => setItemStatus(item, 'completed')}
+                    className="press h-9 rounded-xl border border-indigo-600 px-3 text-[13px] font-medium text-indigo-300 hover:bg-indigo-900/30">
+                    Zakończ punkt
+                  </button>
+                )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'resolution' && (
                   <div className="flex gap-1.5 pl-7 sm:pl-0">
                     <button onClick={() => openVote(item, 'open')}
                       className="rounded-xl px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors active:scale-95">Głosuj jawnie</button>
                     <button onClick={() => openVote(item, 'secret')}
                       className="rounded-xl px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors active:scale-95">Głosuj tajnie</button>
+                  </div>
+                )}
+                {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'opinion' && (
+                  <div className="flex gap-1.5 pl-7 sm:pl-0">
+                    <button onClick={() => openVote(item, 'open', 'opinion')}
+                      className="press h-9 rounded-xl bg-teal-600 px-3 text-[13px] font-medium text-white hover:bg-teal-500">Opiniuj jawnie</button>
+                    <button onClick={() => openVote(item, 'secret', 'opinion')}
+                      className="press h-9 rounded-xl bg-zinc-700 px-3 text-[13px] font-medium text-zinc-300 hover:bg-zinc-600">Opiniuj tajnie</button>
                   </div>
                 )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (
@@ -338,9 +379,11 @@ function VoteResults({ votes }: { votes: Vote[] }) {
       ) : (
         <div key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs pl-7">
           <span className={clsx('rounded-full px-2 py-0.5 font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
-            {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
+            {resultLabel(v)}
           </span>
-          <span className="text-zinc-500">Za: {v.votes_for} · Przeciw: {v.votes_against} · Wstrzym.: {v.votes_abstain}</span>
+          <span className="text-zinc-500">
+            {v.vote_kind === 'opinion' ? 'Pozytywnie' : 'Za'}: {v.votes_for} · {v.vote_kind === 'opinion' ? 'Negatywnie' : 'Przeciw'}: {v.votes_against} · Wstrzym.: {v.votes_abstain}
+          </span>
         </div>
       ))}
     </div>
@@ -365,15 +408,15 @@ function PastVotesSection({ votes }: { votes: Vote[] }) {
         ) : (
           <div key={v.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
+              <div className="min-w-0 text-sm text-zinc-300">{v.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}</div>
               <div className="flex shrink-0 items-center gap-3">
                 <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}-{v.votes_against}-{v.votes_abstain}</span>
                 <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
-                  {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
+                  {resultLabel(v)}
                 </span>
               </div>
             </div>
-            {v.vote_type === 'open' && <NamedBreakdownToggle voteId={v.id} />}
+            {v.vote_type === 'open' && <NamedBreakdownToggle voteId={v.id} opinion={v.vote_kind === 'opinion'} />}
           </div>
         ))}
       </div>

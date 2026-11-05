@@ -120,6 +120,9 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 029_vote_integrity.sql — wyników głosowań nie da się edytować ręcznie; zamknięte głosowanie jest ostateczne
 030_mandate_scoped_policies.sql — obecność, kolejka mówców i pokwitowania KR wymagają aktywnego mandatu z kadencji posiedzenia
 031_org_access_active_term.sql — dostęp do organizacji i prawa admina tylko z mandatu w aktywnej kadencji (jak w aplikacji)
+032_voting_roles.sql — głosują i liczą się do kworum tylko role z miejscem w składzie
+033_chair_casting_vote_opinions.sql — głosują tylko radni; remis rozstrzyga przewodniczący; punkt „Opinia”
+034_deciding_vote_chair_only.sql — głos rozstrzygający wyłącznie dla roli przewodniczącego
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

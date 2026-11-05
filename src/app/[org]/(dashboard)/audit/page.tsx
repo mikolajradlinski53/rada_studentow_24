@@ -14,6 +14,7 @@ const ACTION_LABELS: Record<string, string> = {
   'session.closed': 'Zamknięto posiedzenie',
   'vote.opened': 'Otwarto głosowanie',
   'vote.closed': 'Zamknięto głosowanie',
+  'vote.decided': 'Głos rozstrzygający przewodniczącego',
   'ballot.cast': 'Oddano głos',
   'attendance.checked_in': 'Potwierdzono obecność',
   'protocol.generated': 'Wygenerowano protokół',
