@@ -123,6 +123,8 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 032_voting_roles.sql — głosują i liczą się do kworum tylko role z miejscem w składzie
 033_chair_casting_vote_opinions.sql — głosują tylko radni; remis rozstrzyga przewodniczący; punkt „Opinia”
 034_deciding_vote_chair_only.sql — głos rozstrzygający wyłącznie dla roli przewodniczącego
+035_resolution_lock_and_log.sql — wersja EN uchwał (brakująca 013); opublikowana uchwała jest ostateczna (tylko uchylenie); każda zmiana w logach
+036_fix_resolution_log.sql — poprawka zapisu zmian uchwał w logach
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

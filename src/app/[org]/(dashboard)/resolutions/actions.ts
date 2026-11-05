@@ -110,12 +110,34 @@ export async function saveResolution(
       ...(signing ? { signed_by: user?.id ?? null, signed_at: new Date().toISOString() } : {}),
     })
     .eq('id', id);
-  if (error) return { error: error.message };
+  if (error) return { error: lockMessage(error.message) };
 
+  // Content edits and status changes are logged by a DB trigger (migration 035).
   if (signing) await supabase.rpc('log_audit', { p_action: 'resolution.signed', p_target_type: 'resolution', p_target_id: id, p_metadata: {} });
-  if (fields.status === 'published') await supabase.rpc('log_audit', { p_action: 'resolution.published', p_target_type: 'resolution', p_target_id: id, p_metadata: {} });
 
   revalidatePath(`/${slug}/resolutions`);
   revalidatePath(`/${slug}/resolutions/${id}`);
   return { ok: true };
+}
+
+/** Revoking (uchylenie) is the only change a published resolution allows. */
+export async function revokeResolution(slug: string, id: string): Promise<Result> {
+  const supabase = await createServerSupabase();
+  const { data: res } = await supabase.from('resolutions').select('session_id, status').eq('id', id).maybeSingle();
+  if (!res) return { error: 'Nie znaleziono uchwały' };
+  const ctx = await canManage(slug, res.session_id);
+  if (!ctx) return { error: 'Brak uprawnień' };
+  if (res.status !== 'published' && res.status !== 'adopted') return { error: 'Uchylić można tylko podjętą uchwałę.' };
+
+  const { error } = await supabase.from('resolutions').update({ status: 'revoked' }).eq('id', id);
+  if (error) return { error: lockMessage(error.message) };
+  revalidatePath(`/${slug}/resolutions`);
+  revalidatePath(`/${slug}/resolutions/${id}`);
+  return { ok: true };
+}
+
+function lockMessage(msg: string): string {
+  if (msg.includes('resolution_published_is_final')) return 'Opublikowanej uchwały nie można zmienić. Można ją tylko uchylić.';
+  if (msg.includes('resolution_revoked_is_final')) return 'Uchwała jest uchylona i nie można jej zmienić.';
+  return msg;
 }

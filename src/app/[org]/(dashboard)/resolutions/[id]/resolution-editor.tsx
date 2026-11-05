@@ -9,12 +9,13 @@ import { clsx } from 'clsx';
 import { Check, ChevronDown, ChevronLeft, FileDown, Languages, Sparkles } from 'lucide-react';
 import type { ResolutionStatus } from '@/types/database';
 import { runAi, runAiStream } from '@/lib/ai';
-import { saveResolution } from '../actions';
+import { saveResolution, revokeResolution } from '../actions';
 
 const STATUS_LABEL: Record<ResolutionStatus, string> = {
   draft: 'Szkic', adopted: 'Uchwalona', published: 'Opublikowana', revoked: 'Uchylona',
 };
-const STATUSES = Object.keys(STATUS_LABEL) as ResolutionStatus[];
+// 'revoked' isn't picked here - revoking has its own button (migration 035).
+const STATUSES: ResolutionStatus[] = ['draft', 'adopted', 'published'];
 
 export function ResolutionEditor({
   org, id, signature, sessionTitle, canEdit, signerName, signedAt, initial,
@@ -81,7 +82,21 @@ export function ResolutionEditor({
     setAi(null);
   };
 
+  // A published resolution is final (DB-enforced); only revoking remains.
+  const locked = initial.status === 'published' || initial.status === 'revoked';
+
+  const revoke = () => {
+    if (!confirm('Uchylić uchwałę? Tego nie można cofnąć; zmiana trafi do logów KR.')) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await revokeResolution(org, id);
+      if (res?.error) setError(res.error); else router.refresh();
+    });
+  };
+
   const save = () => {
+    if (status === 'published' && initial.status !== 'published'
+      && !confirm('Opublikować uchwałę? Po publikacji jej treści nie będzie można zmienić.')) return;
     setError(null); setSaved(false);
     startTransition(async () => {
       const res = await saveResolution(org, id, {
@@ -120,7 +135,22 @@ export function ResolutionEditor({
 
       {error && <p role="alert" className="mb-4 rounded-xl border border-red-900/60 bg-red-950/30 px-3.5 py-2.5 text-sm text-red-300">{error}</p>}
 
-      {!canEdit ? (
+      {locked && (
+        <div className={clsx('mb-4 rounded-2xl border px-4 py-3 text-[14px]',
+          initial.status === 'revoked' ? 'border-red-900/60 bg-red-950/20 text-red-300' : 'border-emerald-800/60 bg-emerald-950/20 text-emerald-300')}>
+          {initial.status === 'revoked'
+            ? 'Uchwała uchylona. Treść pozostaje w rejestrze, nie można jej zmienić.'
+            : 'Uchwała opublikowana. Treść jest ostateczna; każda zmiana statusu trafia do logów KR.'}
+          {canEdit && initial.status === 'published' && (
+            <button onClick={revoke} disabled={isPending}
+              className="press mt-3 flex h-10 items-center rounded-xl border border-red-900/70 px-3.5 text-[13px] font-medium text-red-300 hover:bg-red-950/40 disabled:opacity-50">
+              Uchyl uchwałę
+            </button>
+          )}
+        </div>
+      )}
+
+      {!canEdit || locked ? (
         <article className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h2 className="text-[17px] font-semibold text-zinc-100">{title}</h2>
           {legalBasis && <p className="mt-2 text-[14px] italic text-zinc-400">{legalBasis}</p>}

@@ -6,22 +6,11 @@ import { clsx } from 'clsx';
 import { ShieldCheck } from 'lucide-react';
 import { pl } from 'date-fns/locale';
 import { getOrgContext } from '@/lib/org';
+import { ACTION_LABELS, auditHint } from '@/lib/audit-labels';
 import { AuditFilters } from './audit-filters';
 import { ExportCsvButton } from './export-csv-button';
 
-const ACTION_LABELS: Record<string, string> = {
-  'session.opened': 'Otwarto posiedzenie',
-  'session.closed': 'Zamknięto posiedzenie',
-  'vote.opened': 'Otwarto głosowanie',
-  'vote.closed': 'Zamknięto głosowanie',
-  'vote.decided': 'Głos rozstrzygający przewodniczącego',
-  'ballot.cast': 'Oddano głos',
-  'attendance.checked_in': 'Potwierdzono obecność',
-  'protocol.generated': 'Wygenerowano protokół',
-  'resolution.created': 'Utworzono uchwałę',
-  'resolution.signed': 'Podpisano uchwałę',
-  'resolution.published': 'Opublikowano uchwałę',
-};
+// Labels + detail wording live in @/lib/audit-labels (shared with the CSV export).
 
 export default async function AuditPage({
   params, searchParams,
@@ -68,8 +57,7 @@ export default async function AuditPage({
       ) : (
         <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
           {logs.map((log, i) => {
-            const m = (log.metadata ?? {}) as { signature?: string; vote_type?: string; email?: string };
-            const hint = m.signature ?? m.email ?? (m.vote_type ? (m.vote_type === 'secret' ? 'tajne' : 'jawne') : null);
+            const hint = auditHint(log.metadata as Record<string, unknown> | null);
             const actor = (log as { actor?: { full_name?: string } | null }).actor?.full_name ?? 'System';
             return (
               <div key={log.id} className={clsx('px-4 py-3', i > 0 && 'border-t border-zinc-800/80')}>

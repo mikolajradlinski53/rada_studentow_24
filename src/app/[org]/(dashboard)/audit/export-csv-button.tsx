@@ -1,5 +1,7 @@
 'use client';
 
+import { auditHint } from '@/lib/audit-labels';
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
@@ -35,10 +37,7 @@ export function ExportCsvButton({
 
     const rows: (string | number)[][] = [['Data', 'Osoba', 'Akcja', 'Szczegóły']];
     for (const l of (data as unknown as Row[]) ?? []) {
-      const m = l.metadata ?? {};
-      const hint =
-        (m.signature as string) ??
-        (m.vote_type ? (m.vote_type === 'secret' ? 'tajne' : 'jawne') : (m.kind as string) ?? '');
+      const hint = auditHint(l.metadata) ?? (typeof l.metadata?.kind === 'string' ? l.metadata.kind : '');
       rows.push([
         format(new Date(l.created_at), 'yyyy-MM-dd HH:mm:ss'),
         l.actor?.full_name ?? '',
