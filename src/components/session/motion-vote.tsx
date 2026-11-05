@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { clsx } from 'clsx';
-import { tallyOf } from '@/lib/use-live-session';
-import { TallyBar } from '@/components/session/tally';
-import type { Vote, Ballot, BallotChoice, Mandate } from '@/types/database';
+import { Check } from 'lucide-react';
+import { castCount } from '@/lib/use-live-session';
+import type { Vote, BallotChoice, Mandate } from '@/types/database';
 
 const CHOICE_LABEL: Record<BallotChoice, string> = { for: 'ZA', against: 'PRZECIW', abstain: 'WSTRZYMUJĘ SIĘ' };
 const CHOICE_STYLE: Record<BallotChoice, string> = {
@@ -16,23 +16,23 @@ const CHOICE_STYLE: Record<BallotChoice, string> = {
 // Active motion vote. Casting is two-step (pick → confirm): a ballot can't be
 // changed, and a stray thumb on a phone shouldn't decide it.
 export function MotionVoteCard({
-  vote, ballots, myBallot, myMandate, isCheckedIn, isChair, presentCount, eligible, nameByMandate, onCast, onClose,
+  vote, voterIds, myBallot, myMandate, isCheckedIn, isChair, presentCount, nameByMandate, onCast, onClose,
 }: {
   vote: Vote;
-  ballots: Ballot[];
+  /** Who already voted (open votes only) - never how. */
+  voterIds: string[];
   myBallot: BallotChoice | null;
   myMandate: Mandate | null;
   isCheckedIn: boolean;
   isChair: boolean;
   presentCount: number;
-  eligible: number;
   nameByMandate: Map<string, string>;
   onCast: (choice: BallotChoice) => Promise<boolean>;
   onClose: () => void;
 }) {
   const [picked, setPicked] = useState<BallotChoice | null>(null);
   const [busy, setBusy] = useState(false);
-  const tally = tallyOf(vote, ballots);
+  const cast = castCount(vote);
 
   const confirm = async () => {
     if (!picked) return;
@@ -51,34 +51,31 @@ export function MotionVoteCard({
             Głosowanie {vote.vote_type === 'secret' ? 'tajne' : 'jawne'}
           </h2>
         </div>
-        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{tally.cast} / {presentCount} głosów</span>
+        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{cast} / {presentCount} głosów</span>
       </div>
       <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{vote.title.replace(/^Głosowanie:\s*/i, '')}</p>
 
-      {/* Live tally */}
-      {vote.vote_type === 'open' ? (
-        <div className="space-y-3">
-          <TallyBar label="ZA" count={tally.forN} total={eligible} tone="for" />
-          <TallyBar label="PRZECIW" count={tally.against} total={eligible} tone="against" />
-          <TallyBar label="WSTRZYMUJĘ SIĘ" count={tally.abstain} total={eligible} tone="abstain" />
-          {ballots.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {ballots.map((b) => (
-                <span key={b.id}
-                  className={clsx('rounded-full px-2 py-0.5 text-xs',
-                    b.choice === 'for' ? 'bg-emerald-900/40 text-emerald-300'
-                      : b.choice === 'against' ? 'bg-red-900/40 text-red-300'
-                      : 'bg-zinc-800 text-zinc-400')}>
-                  {b.mandate_id ? nameByMandate.get(b.mandate_id) ?? '-' : '-'}
-                </span>
-              ))}
-            </div>
-          )}
+      {/* Live: turnout only. The breakdown appears when the vote is closed. */}
+      <div className="rounded-2xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">
+        <div className="text-4xl font-semibold tabular-nums text-zinc-100">{cast}</div>
+        <div className="mt-1 text-xs text-zinc-400">
+          oddanych głosów · wynik {vote.vote_type === 'open' ? 'i lista imienna ' : ''}po zamknięciu
         </div>
-      ) : (
-        <div className="rounded-2xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">
-          <div className="text-4xl font-semibold tabular-nums text-zinc-100">{tally.cast}</div>
-          <div className="mt-1 text-xs text-zinc-400">oddanych głosów · wynik po zamknięciu (tajne)</div>
+        <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-full rounded-full bg-indigo-500 transition-all duration-500 ease-out"
+            style={{ width: `${presentCount > 0 ? Math.min(100, Math.round((cast / presentCount) * 100)) : 0}%` }} />
+        </div>
+      </div>
+      {vote.vote_type === 'open' && voterIds.length > 0 && (
+        <div className="mt-3">
+          <div className="mb-1.5 text-[12px] text-zinc-500">Zagłosowali:</div>
+          <div className="flex flex-wrap gap-1.5">
+            {voterIds.map((id) => (
+              <span key={id} className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-1 text-[13px] text-zinc-300">
+                <Check className="h-3 w-3 text-indigo-300" strokeWidth={3} /> {nameByMandate.get(id) ?? '-'}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

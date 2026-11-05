@@ -16,7 +16,8 @@ import { PendingVoters } from '@/components/session/pending-voters';
 import { AgendaComments } from '@/components/session/agenda-comments';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, MonitorUp, Square } from 'lucide-react';
+import { ClosedVoteCard, NamedBreakdownToggle } from '@/components/session/vote-result';
+import { Check, MonitorUp, Square, X } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
 import { settleMotionVote } from '@/lib/motions';
@@ -32,9 +33,19 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   }, [params]);
 
   const {
-    loading, session, agendaItems, attendance, activeVote, openVoteBallots,
+    loading, session, agendaItems, attendance, activeVote, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin,
   } = useLiveSession(sessionId);
+
+  // Closed votes of this sitting, reloaded whenever a vote opens or closes.
+  const [closedVotes, setClosedVotes] = useState<Vote[]>([]);
+  const [dismissedId, setDismissedId] = useState<string | null>(null);
+  const activeVoteId = activeVote?.id ?? null;
+  useEffect(() => {
+    if (!sessionId) return;
+    supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'closed')
+      .order('closed_at', { ascending: false }).then(({ data }) => setClosedVotes((data as Vote[]) ?? []));
+  }, [sessionId, supabase, activeVoteId]);
 
   const isChair =
     isPlatformAdmin ||
@@ -133,6 +144,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   const nameByMandate = new Map(
     attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '-'])
   );
+  const lastMotion = closedVotes.find((v) => v.vote_kind !== 'election') ?? null;
 
   return (
     <div className="space-y-6">
@@ -218,13 +230,12 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
             <MotionVoteCard
               key={activeVote.id}
               vote={activeVote}
-              ballots={openVoteBallots}
+              voterIds={openVoterIds}
               myBallot={myBallot}
               myMandate={myMandate}
               isCheckedIn={isCheckedIn}
               isChair={isChair}
               presentCount={presentCount}
-              eligible={eligible}
               nameByMandate={nameByMandate}
               onCast={castBallot}
               onClose={closeVote}
@@ -232,9 +243,20 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           )}
           {isChair && (
             <div className="mt-3">
-              <PendingVoters vote={activeVote} attendance={attendance} openBallots={openVoteBallots} />
+              <PendingVoters vote={activeVote} attendance={attendance} openVoterIds={openVoterIds} />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Just closed: the numbers, then who voted how (open votes) */}
+      {!activeVote && lastMotion && lastMotion.id !== dismissedId && (
+        <div>
+          <ClosedVoteCard vote={lastMotion} eligible={eligible} />
+          <button onClick={() => setDismissedId(lastMotion.id)}
+            className="press mt-2 inline-flex h-9 items-center gap-1 rounded-xl px-2.5 text-[13px] text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300">
+            <X className="h-3.5 w-3.5" /> Ukryj wynik
+          </button>
         </div>
       )}
 
@@ -292,25 +314,19 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                 <AgendaMaterials itemId={item.id} sessionId={sessionId} canEdit={false} />
                 <AgendaComments itemId={item.id} myMandateId={myMandate?.id} canModerate={isChair} />
               </div>
-              <VoteResults agendaItemId={item.id} />
+              <VoteResults votes={closedVotes.filter((v) => v.agenda_item_id === item.id)} />
             </div>
           ))}
         </div>
       </div>
 
-      <PastVotesSection sessionId={sessionId} />
+      <PastVotesSection votes={closedVotes} />
     </div>
   );
 }
 
 // Closed votes for an agenda item
-function VoteResults({ agendaItemId }: { agendaItemId: string }) {
-  const [votes, setVotes] = useState<Vote[]>([]);
-  const supabase = createClient();
-  useEffect(() => {
-    supabase.from('votes').select('*').eq('agenda_item_id', agendaItemId).eq('status', 'closed')
-      .then(({ data }) => setVotes(data ?? []));
-  }, [agendaItemId, supabase]);
+function VoteResults({ votes }: { votes: Vote[] }) {
   if (!votes.length) return null;
   return (
     <div className="mt-2 space-y-1.5">
@@ -332,14 +348,7 @@ function VoteResults({ agendaItemId }: { agendaItemId: string }) {
 }
 
 // All closed votes in session
-function PastVotesSection({ sessionId }: { sessionId: string }) {
-  const [votes, setVotes] = useState<Vote[]>([]);
-  const supabase = createClient();
-  useEffect(() => {
-    if (!sessionId) return;
-    supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'closed')
-      .order('closed_at', { ascending: false }).then(({ data }) => setVotes(data ?? []));
-  }, [sessionId, supabase]);
+function PastVotesSection({ votes }: { votes: Vote[] }) {
   if (!votes.length) return null;
   return (
     <div>
@@ -354,14 +363,17 @@ function PastVotesSection({ sessionId }: { sessionId: string }) {
             <ElectionResultRow vote={v} />
           </div>
         ) : (
-          <div key={v.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
-            <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}-{v.votes_against}-{v.votes_abstain}</span>
-              <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
-                {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
-              </span>
+          <div key={v.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 text-sm text-zinc-300">{v.title}</div>
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="text-xs tabular-nums text-zinc-500">{v.votes_for}-{v.votes_against}-{v.votes_abstain}</span>
+                <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[v.result ?? 'rejected'])}>
+                  {VOTE_RESULT_LABEL[v.result ?? 'rejected']}
+                </span>
+              </div>
             </div>
+            {v.vote_type === 'open' && <NamedBreakdownToggle voteId={v.id} />}
           </div>
         ))}
       </div>

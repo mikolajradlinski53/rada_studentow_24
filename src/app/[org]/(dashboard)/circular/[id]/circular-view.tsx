@@ -12,6 +12,7 @@ import { AgendaMaterials } from '@/components/session/agenda-materials';
 import { AgendaComments } from '@/components/session/agenda-comments';
 import { CreateResolutionButton } from '@/components/session/create-resolution-button';
 import { VOTE_RESULT_LABEL } from '@/components/session/tally';
+import { NamedBreakdown } from '@/components/session/vote-result';
 import type { BallotChoice, Vote } from '@/types/database';
 
 function useNow(ms: number) {
@@ -43,7 +44,7 @@ export function CircularView({
   org, sessionId, orgId, canManage, resolutionId,
 }: { org: string; sessionId: string; orgId: string; canManage: boolean; resolutionId: string | null }) {
   const live = useLiveSession(sessionId);
-  const { loading, session, agendaItems, myMandate, myBallot, openVoteBallots, quorum, refetch } = live;
+  const { loading, session, agendaItems, myMandate, myBallot, openVoterIds, quorum, refetch } = live;
   const supabase = createClient();
   const now = useNow(30_000);
   const [vote, setVote] = useState<Vote | null>(null);
@@ -58,7 +59,7 @@ export function CircularView({
     if (!sessionId) return;
     supabase.from('votes').select('*').eq('session_id', sessionId).order('opened_at').limit(1).maybeSingle()
       .then(({ data }) => setVote((data as Vote) ?? null));
-  }, [sessionId, supabase, live.activeVote?.id, live.activeVote?.secret_cast_count, openVoteBallots.length, session?.status]);
+  }, [sessionId, supabase, live.activeVote?.id, live.activeVote?.secret_cast_count, openVoterIds.length, session?.status]);
 
   if (loading || !session) {
     return <div className="h-64 animate-pulse rounded-2xl bg-zinc-900/60" />;
@@ -68,9 +69,7 @@ export function CircularView({
   const open = vote?.status === 'open';
   const seats = quorum?.total_seats ?? 0;
   const required = quorum?.required ?? Math.floor(seats / 2) + 1;
-  const cast = !vote ? 0 : vote.vote_type === 'open'
-    ? (open ? openVoteBallots.length : vote.votes_for + vote.votes_against + vote.votes_abstain)
-    : (open ? vote.secret_cast_count : vote.votes_for + vote.votes_against + vote.votes_abstain);
+  const cast = !vote ? 0 : open ? vote.secret_cast_count : vote.votes_for + vote.votes_against + vote.votes_abstain;
   const deadline = vote?.closes_at ? new Date(vote.closes_at) : null;
   const left = deadline && now ? deadline.getTime() - now : null;
 
@@ -153,13 +152,13 @@ export function CircularView({
       <div className="mt-6">
         {open && vote ? (
           <>
-            <MotionVoteCard key={vote.id} vote={vote} ballots={openVoteBallots} myBallot={myBallot} myMandate={myMandate}
-              isCheckedIn isChair={false} presentCount={seats} eligible={seats}
+            <MotionVoteCard key={vote.id} vote={vote} voterIds={openVoterIds} myBallot={myBallot} myMandate={myMandate}
+              isCheckedIn isChair={false} presentCount={seats}
               nameByMandate={new Map(everyone.map((a) => [a.mandate_id, a.mandate.profile?.full_name ?? '-']))}
               onCast={castBallot} onClose={() => {}} />
             {canManage && (
               <div className="mt-3 space-y-3">
-                <PendingVoters vote={vote} attendance={everyone as unknown as AttendanceWithMandate[]} openBallots={openVoteBallots} />
+                <PendingVoters vote={vote} attendance={everyone as unknown as AttendanceWithMandate[]} openVoterIds={openVoterIds} />
                 <button onClick={closeEarly}
                   className="press h-11 w-full rounded-xl border border-zinc-700 text-[14px] text-zinc-300 hover:border-zinc-500">
                   Zakończ przed terminem
@@ -178,6 +177,12 @@ export function CircularView({
             </div>
             {vote.result === 'no_quorum' && (
               <p className="mt-1 text-[13px] text-zinc-400">Zagłosowało {cast} z wymaganych {required}.</p>
+            )}
+            {vote.vote_type === 'open' && (
+              <div className="mt-4 text-left">
+                <h3 className="mb-2 text-[13px] font-medium text-zinc-400">Kto jak głosował</h3>
+                <NamedBreakdown voteId={vote.id} />
+              </div>
             )}
             {vote.result === 'passed' && canManage && (
               <div className="mt-4 flex justify-center">

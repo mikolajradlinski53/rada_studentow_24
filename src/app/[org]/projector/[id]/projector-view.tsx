@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { Check, Coffee, Maximize, Mic, Minimize, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useLiveSession, tallyOf, fetchElectionResults } from '@/lib/use-live-session';
-import { TallyBar, VOTE_RESULT_LABEL } from '@/components/session/tally';
+import { useLiveSession, castCount, fetchElectionResults } from '@/lib/use-live-session';
+import { VOTE_RESULT_LABEL } from '@/components/session/tally';
+import { NamedBreakdown } from '@/components/session/vote-result';
 import { useCountdown } from '@/components/session/break-banner';
 import { SpeakerTimer } from '@/components/session/speaker-timer';
 import type { Vote, ElectionResult } from '@/types/database';
@@ -43,7 +44,7 @@ function useIdle(ms: number) {
 }
 
 export function ProjectorView({ sessionId }: { sessionId: string }) {
-  const { loading, session, agendaItems, attendance, activeVote, openVoteBallots, quorum, presentCount, candidates, floorRequests } =
+  const { loading, session, agendaItems, attendance, activeVote, openVoterIds, quorum, presentCount, candidates, floorRequests } =
     useLiveSession(sessionId);
   const supabase = createClient();
   const breakRemaining = useCountdown(session?.on_break_until ?? null);
@@ -88,17 +89,11 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
     );
   }
 
-  const tally = tallyOf(activeVote, openVoteBallots);
-  const eligible = quorum?.total_seats ?? presentCount;
+  const cast = castCount(activeVote);
 
-  // Open vote: who voted how (named voting is public - show it on the beamer).
+  // Open vote: WHO has voted is public live; how they voted appears at close.
   const nameByMandate = new Map(attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '-']));
-  const votersByChoice = { for: [] as string[], against: [] as string[], abstain: [] as string[] };
-  if (activeVote?.vote_type === 'open') {
-    for (const b of openVoteBallots) {
-      if (b.mandate_id) votersByChoice[b.choice].push(nameByMandate.get(b.mandate_id) ?? '-');
-    }
-  }
+  const voterNames = openVoterIds.map((id) => nameByMandate.get(id) ?? '-').sort((a, b) => a.localeCompare(b, 'pl'));
 
   const speaker = floorRequests.find((r) => r.status === 'speaking') ?? null;
   const queue = floorRequests.filter((r) => r.status === 'waiting');
@@ -164,27 +159,22 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
               <div className="mt-3 text-5xl font-semibold leading-tight tracking-tight">{activeVote.title.replace(/^Głosowanie:\s*/i, '')}</div>
             </div>
 
-            {activeVote.vote_type === 'open' ? (
-              <div className="space-y-8">
-                <TallyBar label="ZA" count={tally.forN} total={eligible} tone="for" size="lg" />
-                <TallyBar label="PRZECIW" count={tally.against} total={eligible} tone="against" size="lg" />
-                <TallyBar label="WSTRZYMUJĘ SIĘ" count={tally.abstain} total={eligible} tone="abstain" size="lg" />
-                {tally.cast > 0 && (
-                  <div className="grid grid-cols-3 gap-4 pt-2">
-                    <VoterColumn title="Za" names={votersByChoice.for} tone="text-emerald-300" />
-                    <VoterColumn title="Przeciw" names={votersByChoice.against} tone="text-red-300" />
-                    <VoterColumn title="Wstrzymali się" names={votersByChoice.abstain} tone="text-zinc-300" />
-                  </div>
-                )}
-                <Turnout cast={tally.cast} present={presentCount} />
+            <div className="text-center">
+              <div className="font-mono text-[11rem] font-semibold leading-none tabular-nums">{cast}</div>
+              <div className="mt-4 text-3xl text-zinc-400">oddanych głosów z {presentCount} obecnych</div>
+              <div className="mt-3 text-xl text-zinc-500">
+                Wynik{activeVote.vote_type === 'open' ? ' i lista imienna pojawią się' : ' pojawi się'} po zamknięciu głosowania
               </div>
-            ) : (
-              <div className="text-center">
-                <div className="font-mono text-[11rem] font-semibold leading-none tabular-nums">{tally.cast}</div>
-                <div className="mt-4 text-3xl text-zinc-400">oddanych głosów z {presentCount} obecnych</div>
-                <div className="mt-3 text-xl text-zinc-500">Wynik pojawi się po zamknięciu głosowania</div>
-              </div>
-            )}
+              {activeVote.vote_type === 'open' && voterNames.length > 0 && (
+                <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-2.5">
+                  {voterNames.map((n, i) => (
+                    <span key={`${n}-${i}`} className="inline-flex items-center gap-2 rounded-full bg-zinc-900/80 px-4 py-1.5 text-xl text-zinc-300 ring-1 ring-zinc-800">
+                      <Check className="h-4 w-4 text-indigo-300" strokeWidth={3} /> {n}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : speaker ? (
           <div className="text-center">
@@ -240,6 +230,11 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
               <Score label="Przeciw" value={lastResult.votes_against} tone="text-red-300" />
               <Score label="Wstrzymało się" value={lastResult.votes_abstain} tone="text-zinc-300" />
             </div>
+            {lastResult.vote_type === 'open' && (
+              <div className="mx-auto mt-12 max-w-5xl text-left">
+                <NamedBreakdown voteId={lastResult.id} size="lg" />
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center">
@@ -302,15 +297,3 @@ function Score({ label, value, tone }: { label: string; value: number; tone: str
   );
 }
 
-function VoterColumn({ title, names, tone }: { title: string; names: string[]; tone: string }) {
-  return (
-    <div className="rounded-3xl bg-zinc-900/60 p-5 ring-1 ring-zinc-800">
-      <div className={clsx('mb-3 text-center text-lg font-semibold', tone)}>
-        {title} <span className="tabular-nums text-zinc-500">· {names.length}</span>
-      </div>
-      <ul className="space-y-1 text-center text-lg text-zinc-300">
-        {names.map((n, i) => <li key={i} className="truncate">{n}</li>)}
-      </ul>
-    </div>
-  );
-}

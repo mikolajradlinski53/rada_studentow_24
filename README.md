@@ -115,6 +115,8 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 025_circular_votes.sql — głosowania obiegowe (termin, kworum z oddanych głosów), głos tylko z mandatu kadencji
 026_stats_circular.sql — frekwencja: obiegowe liczą się do udziału w głosowaniach
 027_secret_ballot_counters.sql — głosy tajne i wybory tylko jako niewidoczne liczniki (bez pojedynczych głosów)
+028_open_vote_reveal_on_close.sql — głosowanie jawne: w trakcie widać tylko kto zagłosował, wynik i lista imienna po zamknięciu
+029_vote_integrity.sql — wyników głosowań nie da się edytować ręcznie; zamknięte głosowanie jest ostateczne
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

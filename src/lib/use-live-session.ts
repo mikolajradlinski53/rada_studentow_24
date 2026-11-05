@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import type {
-  Session, AgendaItem, Vote, Attendance, Mandate, Profile, Ballot, FloorRequest,
+  Session, AgendaItem, Vote, Attendance, Mandate, Profile, FloorRequest,
   VoteCandidate, ElectionResult, BallotChoice, QuorumInfo,
 } from '@/types/database';
 
@@ -17,8 +17,9 @@ export interface LiveSessionData {
   agendaItems: AgendaItem[];
   attendance: AttendanceWithMandate[];
   activeVote: Vote | null;
-  /** Individual ballots of the active OPEN vote (readable); empty for secret votes. */
-  openVoteBallots: Ballot[];
+  /** Mandates that already voted in the active OPEN vote (who, not how - choices
+   *  are revealed only at close, migration 028); empty for secret votes. */
+  openVoterIds: string[];
   myMandate: Mandate | null;
   myBallot: BallotChoice | null;
   quorum: QuorumInfo | null;
@@ -74,7 +75,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [attendance, setAttendance] = useState<AttendanceWithMandate[]>([]);
   const [activeVote, setActiveVote] = useState<Vote | null>(null);
-  const [openVoteBallots, setOpenVoteBallots] = useState<Ballot[]>([]);
+  const [openVoterIds, setOpenVoterIds] = useState<string[]>([]);
   const [myMandate, setMyMandate] = useState<Mandate | null>(null);
   const [myBallot, setMyBallot] = useState<BallotChoice | null>(null);
   const [quorum, setQuorum] = useState<QuorumInfo | null>(null);
@@ -142,13 +143,12 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       .eq('session_id', sessionId).eq('status', 'open').limit(1).maybeSingle();
     setActiveVote(vote);
 
-    // Live tally source for OPEN votes (RLS exposes only open-vote ballots).
+    // Who has voted in an OPEN vote. Choices stay hidden until close (RLS).
     if (vote && vote.vote_type === 'open') {
-      const { data: ballots } = await supabase
-        .from('ballots').select('*').eq('vote_id', vote.id);
-      setOpenVoteBallots((ballots as Ballot[]) ?? []);
+      const { data: voters } = await supabase.rpc('open_vote_voters', { p_vote_id: vote.id });
+      setOpenVoterIds(((voters as { mandate_id: string }[]) ?? []).map((r) => r.mandate_id));
     } else {
-      setOpenVoteBallots([]);
+      setOpenVoterIds([]);
     }
 
     // Candidates for an active election.
@@ -206,20 +206,24 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   ).length;
 
   return {
-    loading, session, agendaItems, attendance, activeVote, openVoteBallots,
+    loading, session, agendaItems, attendance, activeVote, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
   };
 }
 
-/** Aggregate live tally for the active vote. */
-export function tallyOf(vote: Vote | null, openBallots: Ballot[]) {
-  if (!vote) return { forN: 0, against: 0, abstain: 0, cast: 0 };
-  if (vote.vote_type === 'open') {
-    const forN = openBallots.filter((b) => b.choice === 'for').length;
-    const against = openBallots.filter((b) => b.choice === 'against').length;
-    const abstain = openBallots.filter((b) => b.choice === 'abstain').length;
-    return { forN, against, abstain, cast: forN + against + abstain };
-  }
-  // Secret: only turnout is known live (no breakdown until close).
-  return { forN: 0, against: 0, abstain: 0, cast: vote.secret_cast_count };
+/** Ballots cast so far in a vote (any type; the counter is bumped per ballot). */
+export function castCount(vote: Vote | null): number {
+  return vote?.secret_cast_count ?? 0;
+}
+
+export type NamedBallot = { choice: BallotChoice; name: string };
+
+/** Who voted how in a CLOSED open vote (RLS releases the rows at close). */
+export async function fetchNamedBallots(supabase: SupabaseClient, voteId: string): Promise<NamedBallot[]> {
+  const { data } = await supabase
+    .from('ballots').select('choice, mandate:mandates(profile:profiles(full_name))').eq('vote_id', voteId);
+  type Row = { choice: BallotChoice; mandate: { profile: { full_name: string | null } | null } | null };
+  return ((data as unknown as Row[]) ?? [])
+    .map((r) => ({ choice: r.choice, name: r.mandate?.profile?.full_name ?? '-' }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 }

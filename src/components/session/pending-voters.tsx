@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { Check, ChevronDown, Hourglass } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type { Ballot, Vote } from '@/types/database';
+import type { Vote } from '@/types/database';
 import type { AttendanceWithMandate } from '@/lib/use-live-session';
 
 /**
- * Chair-only: present members who haven't voted yet. Open votes use the named
- * ballots; secret votes and elections use receipts (who voted, never how -
+ * Chair-only: present members who haven't voted yet. Open votes use
+ * open_vote_voters() (migration 028); secret votes and elections use receipts (who voted, never how -
  * migration 021), refreshed whenever the turnout counter moves.
  */
 export function PendingVoters({
-  vote, attendance, openBallots,
-}: { vote: Vote; attendance: AttendanceWithMandate[]; openBallots: Ballot[] }) {
+  vote, attendance, openVoterIds,
+}: { vote: Vote; attendance: AttendanceWithMandate[]; openVoterIds: string[] }) {
   const [receipts, setReceipts] = useState<{ voteId: string; ids: Set<string> } | null>(null);
   const [open, setOpen] = useState(false);
   const named = vote.vote_type === 'open' && vote.vote_kind !== 'election';
@@ -26,7 +26,7 @@ export function PendingVoters({
   }, [named, vote.id, vote.secret_cast_count]);
 
   const voted = named
-    ? new Set(openBallots.map((b) => b.mandate_id).filter(Boolean) as string[])
+    ? new Set(openVoterIds)
     : receipts?.voteId === vote.id ? receipts.ids : null;
   if (!voted) return null;
 
