@@ -36,8 +36,6 @@ export interface LiveSessionData {
   /** Platform superadmin: chair powers everywhere, regardless of own mandate. */
   isPlatformAdmin: boolean;
   refetch: () => Promise<void>;
-  /** After the server accepted my ballot: show it at once (the refetch confirms it). */
-  markMyBallot: (choice: BallotChoice) => void;
 }
 
 /**
@@ -107,15 +105,21 @@ export function useLiveSession(sessionId: string): LiveSessionData {
     if (!sessionId) return;
     const mine = ++seq.current;
 
-    // The whole live state in ONE round trip (live_state RPC, migration 038).
-    const { data: ls, error: lsErr } = await supabase.rpc('live_state', { p_session_id: sessionId });
-    if (lsErr || !ls) { if (mine === seq.current) setLoading(false); return; }
-    const st = ls as {
-      session: Session | null; agenda: AgendaItem[]; attendance: AttendanceWithMandate[]; quorum: QuorumInfo | null;
-      floor: FloorRequest[]; open_vote: Vote | null; closed_votes: Vote[]; open_voters: string[];
-      candidates: VoteCandidate[]; my_ballot: BallotChoice | null;
-    };
-    const termId = st.session?.term_id;
+    // Wave 1: the live state of the sitting.
+    const [
+      { data: sess }, { data: items }, { data: att }, { data: q }, { data: fr }, { data: vote }, { data: closed },
+    ] = await Promise.all([
+      supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle(),
+      supabase.from('agenda_items').select('*').eq('session_id', sessionId).order('position'),
+      supabase.from('attendance').select('*, mandate:mandates(*, profile:profiles(*))').eq('session_id', sessionId),
+      supabase.rpc('calculate_quorum', { p_session_id: sessionId }),
+      supabase.from('floor_requests').select('*, mandate:mandates(*, profile:profiles(*))')
+        .eq('session_id', sessionId).in('status', ['waiting', 'speaking']).order('created_at'),
+      supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'open').limit(1).maybeSingle(),
+      supabase.from('votes').select('*').eq('session_id', sessionId).eq('status', 'closed').order('closed_at', { ascending: false }),
+    ]);
+    const openVote = vote as Vote | null;
+    const termId = (sess as Session | null)?.term_id;
 
     // Stable part: own mandate, roster, superadmin flag (session read locally, no auth round trip).
     if (termId && (!stable.current || Date.now() - stable.current.at > 5 * 60_000)) {
@@ -137,20 +141,46 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       };
     }
     const mandate = stable.current?.mandate ?? null;
+
+    // Wave 2: only what the open vote needs.
+    const [votersRes, candsRes] = await Promise.all([
+      // Who has voted in an OPEN vote. Choices stay hidden until close (RLS).
+      openVote?.vote_type === 'open'
+        ? supabase.rpc('open_vote_voters', { p_vote_id: openVote.id })
+        : Promise.resolve({ data: [] }),
+      openVote?.vote_kind === 'election'
+        ? supabase.from('vote_candidates').select('*').eq('vote_id', openVote.id).order('position')
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    // Wave 3: have I already voted?
+    let ballot: BallotChoice | null = null;
+    if (openVote && mandate) {
+      if (openVote.vote_type === 'open') {
+        const { data } = await supabase.from('ballots').select('choice')
+          .eq('vote_id', openVote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
+        ballot = (data?.choice as BallotChoice) ?? null;
+      } else {
+        const { data } = await supabase.from('secret_ballot_receipts').select('id')
+          .eq('vote_id', openVote.id).eq('mandate_id', mandate.id).limit(1).maybeSingle();
+        ballot = data ? 'for' : null;
+      }
+    }
+
     if (mine !== seq.current) return; // a newer refetch is on its way
-    setSession(st.session);
-    setAgendaItems(st.agenda ?? []);
+    setSession(sess);
+    setAgendaItems(items ?? []);
     setIsPlatformAdmin(stable.current?.pa === true);
-    setAttendance(st.attendance ?? []);
-    setQuorum(st.quorum);
-    setFloorRequests(orderQueue(st.floor ?? []));
-    setActiveVote(st.open_vote);
-    setClosedVotes(st.closed_votes ?? []);
+    setAttendance((att as AttendanceWithMandate[]) ?? []);
+    setQuorum(q as QuorumInfo | null);
+    setFloorRequests(orderQueue((fr as FloorRequest[]) ?? []));
+    setActiveVote(openVote);
+    setClosedVotes((closed as Vote[]) ?? []);
     setMyMandate(mandate);
     if (stable.current?.roster) setRoster(stable.current.roster);
-    setOpenVoterIds(st.open_voters ?? []);
-    setCandidates(st.candidates ?? []);
-    setMyBallot(st.my_ballot ?? null);
+    setOpenVoterIds(((votersRes.data as { mandate_id: string }[]) ?? []).map((r) => r.mandate_id));
+    setCandidates((candsRes.data as VoteCandidate[]) ?? []);
+    setMyBallot(ballot);
     setLoading(false);
   }, [sessionId, supabase]);
 
@@ -166,32 +196,13 @@ export function useLiveSession(sessionId: string): LiveSessionData {
     // phones out (random 0-1.2 s) so they don't all hit the DB in the same instant.
     let timer: ReturnType<typeof setTimeout> | undefined;
     const kick = () => { clearTimeout(timer); timer = setTimeout(() => { void refetch(); }, 400 + Math.random() * 1200); };
-    // Fast path: the realtime row itself shows the change at once (a vote
-    // opening, the turnout counter, a closed vote, the current agenda item);
-    // the spread-out refetch then fills in the rest. Bumping seq drops any
-    // older refetch still in flight so it can't paint stale state over this.
-    const applyVote = (v: Vote | undefined) => {
-      if (!v?.id) return;
-      seq.current++;
-      if (v.status === 'open') {
-        setActiveVote((cur) => (!cur || cur.id === v.id ? v : cur));
-      } else if (v.status === 'closed') {
-        setActiveVote((cur) => (cur?.id === v.id ? null : cur));
-        setClosedVotes((cur) => [v, ...cur.filter((x) => x.id !== v.id)]);
-      }
-    };
-    const applyItem = (it: AgendaItem | undefined) => {
-      if (!it?.id) return;
-      seq.current++;
-      setAgendaItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, ...it } : x)));
-    };
     // No `ballots` subscription: every ballot also bumps votes.secret_cast_count,
     // which the votes listener already catches (and others' ballots are hidden while open).
     const channel = supabase
       .channel(`session-${sessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, (p) => { applyVote(p.new as Vote); kick(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, kick)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, (p) => { applyItem(p.new as AgendaItem); kick(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, kick)
@@ -207,7 +218,6 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   return {
     loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
-    markMyBallot: (choice: BallotChoice) => { seq.current++; setMyBallot(choice); },
   };
 }
 
