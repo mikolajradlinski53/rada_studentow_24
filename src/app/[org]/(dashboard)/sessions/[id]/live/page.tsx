@@ -36,7 +36,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
 
   const {
     loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
-    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
+    myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch, markMyBallot,
   } = useLiveSession(sessionId);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
 
@@ -132,8 +132,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
       return false;
     }
     navigator.vibrate?.(40);
-    // Records participation only (never the choice) — keeps secret votes anonymous.
-    await supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: { vote_type: activeVote.vote_type } });
+    markMyBallot(choice); // the server accepted it - show 'Głos oddany' now
+    // Records participation only (never the choice) — keeps secret votes anonymous. Not awaited.
+    void supabase.rpc('log_audit', { p_action: 'ballot.cast', p_target_type: 'vote', p_target_id: activeVote.id, p_metadata: { vote_type: activeVote.vote_type } });
     void refetch();
     return true;
   };

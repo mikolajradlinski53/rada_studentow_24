@@ -36,6 +36,8 @@ export interface LiveSessionData {
   /** Platform superadmin: chair powers everywhere, regardless of own mandate. */
   isPlatformAdmin: boolean;
   refetch: () => Promise<void>;
+  /** After the server accepted my ballot: show it at once (the refetch confirms it). */
+  markMyBallot: (choice: BallotChoice) => void;
 }
 
 /**
@@ -196,13 +198,32 @@ export function useLiveSession(sessionId: string): LiveSessionData {
     // phones out (random 0-1.2 s) so they don't all hit the DB in the same instant.
     let timer: ReturnType<typeof setTimeout> | undefined;
     const kick = () => { clearTimeout(timer); timer = setTimeout(() => { void refetch(); }, 400 + Math.random() * 1200); };
+    // Fast path (no extra requests): the realtime row itself shows the change
+    // at once - a vote opening, the turnout counter, a closed vote, the current
+    // agenda item. The spread-out refetch then fills in the rest. Bumping seq
+    // drops an older refetch still in flight so it can't paint stale state.
+    const applyVote = (v: Vote | undefined) => {
+      if (!v?.id) return;
+      seq.current++;
+      if (v.status === 'open') {
+        setActiveVote((cur) => (!cur || cur.id === v.id ? v : cur));
+      } else if (v.status === 'closed') {
+        setActiveVote((cur) => (cur?.id === v.id ? null : cur));
+        setClosedVotes((cur) => [v, ...cur.filter((x) => x.id !== v.id)]);
+      }
+    };
+    const applyItem = (it: AgendaItem | undefined) => {
+      if (!it?.id) return;
+      seq.current++;
+      setAgendaItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, ...it } : x)));
+    };
     // No `ballots` subscription: every ballot also bumps votes.secret_cast_count,
     // which the votes listener already catches (and others' ballots are hidden while open).
     const channel = supabase
       .channel(`session-${sessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, (p) => { applyVote(p.new as Vote); kick(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, kick)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, kick)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, (p) => { applyItem(p.new as AgendaItem); kick(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, kick)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, kick)
@@ -218,6 +239,7 @@ export function useLiveSession(sessionId: string): LiveSessionData {
   return {
     loading, session, agendaItems, attendance, activeVote, closedVotes, openVoterIds,
     myMandate, myBallot, quorum, presentCount, roster, candidates, floorRequests, isPlatformAdmin, refetch,
+    markMyBallot: (choice: BallotChoice) => { seq.current++; setMyBallot(choice); },
   };
 }
 
