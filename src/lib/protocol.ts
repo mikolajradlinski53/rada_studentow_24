@@ -18,6 +18,7 @@ export interface ProtocolData {
   votes: {
     title: string;
     voteType: string;
+    question?: string | null;
     /** 'opinion' prints as opinia pozytywna / negatywna; deciding = chair's casting vote on a tie. */
     voteKind?: string;
     deciding?: string | null;
@@ -102,6 +103,7 @@ export function buildProtocolMarkdown(d: ProtocolData): string {
         + (v.deciding ? ` (remis rozstrzygnięty głosem przewodniczącego: ${v.deciding === 'for' ? 'za' : 'przeciw'})` : '');
       L.push('');
       L.push(`**${i + 1}. ${v.title}** (${v.voteType === 'secret' ? 'tajne' : 'jawne'})`);
+      if (v.question) L.push(`Pytanie: _${v.question}_`);
       L.push(`Za: ${v.forN} · Przeciw: ${v.against} · Wstrzymujące się: ${v.abstain} → **${res}**`);
       if (v.voteType === 'open' && v.voters) {
         if (v.voters.for.length) L.push(`- Za: ${v.voters.for.join(', ')}`);

@@ -56,6 +56,9 @@ export function MotionVoteCard({
         <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-zinc-400">{cast} / {presentCount} głosów</span>
       </div>
       <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{vote.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}</p>
+      {vote.question && (
+        <p className="-mt-2 mb-4 rounded-xl bg-zinc-950/40 px-3.5 py-3 text-[16px] font-medium leading-snug text-zinc-50 ring-1 ring-indigo-800/50 [overflow-wrap:anywhere]">{vote.question}</p>
+      )}
 
       {/* Live: turnout only. The breakdown appears when the vote is closed. */}
       <div className="rounded-2xl border border-indigo-800/60 bg-indigo-950/30 px-4 py-5 text-center">

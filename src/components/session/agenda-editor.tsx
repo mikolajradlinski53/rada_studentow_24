@@ -47,6 +47,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState<AgendaItemType>('discussion');
   const [newVoteType, setNewVoteType] = useState<VoteType>('open');
+  const [newQuestion, setNewQuestion] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
@@ -57,6 +58,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
       .insert({
         session_id: sessionId, position: items.length + 1, title: newTitle.trim(), item_type: newType,
         vote_type: VOTED.includes(newType) ? newVoteType : null,
+        vote_question: VOTED.includes(newType) ? newQuestion.trim() || null : null,
       })
       .select()
       .single();
@@ -65,6 +67,7 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
       setNewTitle('');
       setNewType('discussion');
       setNewVoteType('open');
+      setNewQuestion('');
       setShowForm(false);
     }
     setSaving(false);
@@ -74,6 +77,14 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
     const { error } = await createClient().from('agenda_items').update({ vote_type: voteType }).eq('id', item.id);
     if (error) { alert('Nie udało się zmienić rodzaju głosowania.'); return; }
     setItems((cur) => cur.map((i) => (i.id === item.id ? { ...i, vote_type: voteType } : i)));
+  };
+
+  const setQuestion = async (item: AgendaItem, q: string) => {
+    const vote_question = q.trim() || null;
+    if (vote_question === (item.vote_question ?? null)) return;
+    const { error } = await createClient().from('agenda_items').update({ vote_question }).eq('id', item.id);
+    if (failed(error, 'Nie udało się zapisać pytania.')) return;
+    setItems((cur) => cur.map((i) => (i.id === item.id ? { ...i, vote_question } : i)));
   };
 
   const handleRemove = async (item: AgendaItem) => {
@@ -103,11 +114,15 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
           <div className="min-w-0 flex-1">
             <div className="text-[15px] leading-snug text-zinc-100">{item.title}</div>
             {item.description && <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">{item.description}</p>}
+            {item.vote_question && !canManageMaterials && <p className="mt-1 text-[14px] font-medium leading-snug text-zinc-200">{item.vote_question}</p>}
             <span className={clsx('mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium', ITEM_TYPE_TONE[item.item_type])}>
               {ITEM_TYPE_LABELS[item.item_type]}
             </span>
             {VOTED.includes(item.item_type) && (canManageMaterials ? (
-              <VoteTypePicker value={item.vote_type ?? null} onChange={(v) => setVoteType(item, v)} />
+              <>
+                <VoteTypePicker value={item.vote_type ?? null} onChange={(v) => setVoteType(item, v)} />
+                <QuestionEditor value={item.vote_question ?? ''} onSave={(q) => setQuestion(item, q)} />
+              </>
             ) : item.vote_type ? (
               <span className="ml-1.5 mt-1.5 inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
                 {item.vote_type === 'secret' ? 'Głosowanie tajne' : 'Głosowanie jawne'}
@@ -158,6 +173,11 @@ export function AgendaEditor({ sessionId, initialItems, canEdit, canManageMateri
               ))}
             </div>
             {VOTED.includes(newType) && <VoteTypePicker value={newVoteType} onChange={setNewVoteType} />}
+            {VOTED.includes(newType) && (
+              <textarea value={newQuestion} onChange={(e) => setNewQuestion(e.target.value)} rows={2} maxLength={500}
+                placeholder="Pytanie do głosowania (opcjonalnie), np. Czy jesteś za zaakceptowaniem…?"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-3 text-[16px] text-zinc-100 placeholder-zinc-600 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" />
+            )}
             <div className="grid grid-cols-[1fr_2fr] gap-2.5">
               <button
                 onClick={() => { setShowForm(false); setNewTitle(''); }}
@@ -204,5 +224,15 @@ function VoteTypePicker({ value, onChange }: { value: VoteType | null; onChange:
         </button>
       ))}
     </div>
+  );
+}
+
+/** The question put to the vote; saved when the field loses focus. */
+function QuestionEditor({ value, onSave }: { value: string; onSave: (q: string) => void }) {
+  const [q, setQ] = useState(value);
+  return (
+    <textarea value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => onSave(q)} rows={2} maxLength={500}
+      aria-label="Pytanie do głosowania" placeholder="Pytanie do głosowania (opcjonalnie)"
+      className="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-[15px] text-zinc-100 placeholder-zinc-600 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" />
   );
 }

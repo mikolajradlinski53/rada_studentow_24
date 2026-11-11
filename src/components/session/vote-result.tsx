@@ -105,6 +105,7 @@ export function ClosedVoteCard({ vote, eligible, canDecide = false }: { vote: Vo
       <p className="mb-4 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">
         {vote.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}
       </p>
+      {vote.question && <p className="-mt-2 mb-4 text-[14px] leading-snug text-zinc-400">{vote.question}</p>}
       <div className="space-y-3">
         <TallyBar label={labels.for} count={vote.votes_for} total={eligible} tone="for" />
         <TallyBar label={labels.against} count={vote.votes_against} total={eligible} tone="against" />
@@ -191,6 +192,7 @@ export function PendingAnnouncement({ vote, isAuditor, size = 'sm' }: { vote: Vo
         <ShieldCheck className="h-4 w-4" /> {what}
       </div>
       <p className="mt-2 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{title}</p>
+      {vote.question && <p className="mt-1 text-[14px] leading-snug text-zinc-400">{vote.question}</p>}
       {!isAuditor ? (
         <p className="mt-2 text-[14px] text-zinc-400">Oddano {vote.secret_cast_count} głosów. Wyniki ogłosi Komisja Rewizyjna.</p>
       ) : (

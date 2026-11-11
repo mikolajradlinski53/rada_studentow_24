@@ -55,7 +55,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
 
   const { data: votes } = await supabase
     .from('votes')
-    .select('id, title, vote_type, vote_kind, deciding_vote, result, votes_for, votes_against, votes_abstain')
+    .select('id, title, question, vote_type, vote_kind, deciding_vote, result, votes_for, votes_against, votes_abstain')
     .eq('session_id', sessionId)
     .eq('status', 'closed')
     .order('closed_at');
@@ -74,7 +74,7 @@ export async function generateProtocol(slug: string, sessionId: string): Promise
   const voteData: ProtocolData['votes'] = [];
   for (const v of votes ?? []) {
     const entry: ProtocolData['votes'][number] = {
-      title: v.title, voteType: v.vote_type, voteKind: v.vote_kind, deciding: v.deciding_vote, result: v.result,
+      title: v.title, question: v.question, voteType: v.vote_type, voteKind: v.vote_kind, deciding: v.deciding_vote, result: v.result,
       forN: v.votes_for, against: v.votes_against, abstain: v.votes_abstain,
     };
     if (v.vote_type === 'open') {

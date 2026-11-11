@@ -139,6 +139,8 @@ export interface AgendaItem {
   item_type: AgendaItemType;
   /** Announced open/secret for resolution & opinion items; null = chosen when opening. */
   vote_type?: VoteType | null;
+  /** The exact question put to the vote (migration 042). */
+  vote_question?: string | null;
   description: string | null;
   status: AgendaItemStatus;
   discussion_notes: string | null;
@@ -183,6 +185,8 @@ export interface Vote {
   deciding_vote?: 'for' | 'against' | null;
   deciding_by?: string | null;
   /** Set when the KR announced the result (migration 039); null = ended, waiting for the KR. */
+  /** Question members answered, copied from the agenda item at opening (migration 042). */
+  question?: string | null;
   results_announced_at?: string | null;
   announced_by?: string | null;
   created_at: string;

@@ -160,6 +160,7 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
             <div className="mb-10 text-center">
               <Kicker tone="text-indigo-300">{activeVote.vote_kind === 'opinion' ? 'Opiniowanie' : 'Głosowanie'} {activeVote.vote_type === 'secret' ? 'tajne' : 'jawne'}</Kicker>
               <div className="mt-3 text-5xl font-semibold leading-tight tracking-tight">{activeVote.title.replace(/^(Głosowanie|Opinia):\s*/i, '')}</div>
+              {activeVote.question && <div className="mx-auto mt-6 max-w-4xl text-3xl font-medium leading-snug text-zinc-300">{activeVote.question}</div>}
             </div>
 
             <div className="text-center">

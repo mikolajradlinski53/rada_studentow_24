@@ -112,6 +112,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
       title: `${kind === 'opinion' ? 'Opinia' : 'Głosowanie'}: ${item.title}`,
       vote_type: voteType,
       vote_kind: kind,
+      question: item.vote_question ?? null,
       status: 'open',
       opened_at: new Date().toISOString(),
     }).select('id').single();
@@ -369,7 +370,7 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-w-0 items-start gap-2">
                   <span className="w-5 shrink-0 pt-px text-xs text-zinc-500">{idx + 1}.</span>
-                  <span className="text-sm text-zinc-200">{item.title}</span>
+                  <span className="text-sm text-zinc-200">{item.title}{item.vote_question && <span className="mt-0.5 block text-[13px] text-zinc-400">{item.vote_question}</span>}</span>
                   {item.status === 'in_progress' && (
                     <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white">Teraz</span>
                   )}
