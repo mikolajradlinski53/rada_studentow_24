@@ -6,7 +6,7 @@ import { Check, Coffee, Maximize, Mic, Minimize, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useLiveSession, castCount, fetchElectionResults } from '@/lib/use-live-session';
 import { resultLabel } from '@/components/session/tally';
-import { NamedBreakdown } from '@/components/session/vote-result';
+import { NamedBreakdown, PendingAnnouncement } from '@/components/session/vote-result';
 import { useCountdown } from '@/components/session/break-banner';
 import { SpeakerTimer } from '@/components/session/speaker-timer';
 import type { Vote, ElectionResult } from '@/types/database';
@@ -92,6 +92,15 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
   const speaker = floorRequests.find((r) => r.status === 'speaking') ?? null;
   const queue = floorRequests.filter((r) => r.status === 'waiting');
   const currentIdx = agendaItems.findIndex((i) => i.status === 'in_progress');
+  const currentItem = currentIdx >= 0 ? agendaItems[currentIdx] : null;
+  // A result stays on the beamer only while it belongs to the current item
+  // (voted on it, or after it started). Moving on shows the new item instead.
+  const resultIsCurrent = !!lastResult && (!currentItem
+    || lastResult.agenda_item_id === currentItem.id
+    || (!!currentItem.started_at && !!lastResult.closed_at && lastResult.closed_at > currentItem.started_at));
+  const ITEM_KIND: Record<string, string> = {
+    resolution: 'Uchwała', opinion: 'Opinia', election: 'Wybory', discussion: 'Dyskusja', procedural: 'Sprawy proceduralne', information: 'Informacja',
+  };
 
   return (
     <div className="theme-fixed relative flex min-h-dvh flex-col overflow-hidden bg-zinc-950 px-12 py-8 text-zinc-100">
@@ -194,6 +203,16 @@ export function ProjectorView({ sessionId }: { sessionId: string }) {
               </div>
             )}
           </div>
+        ) : currentItem && !resultIsCurrent ? (
+          <div className="w-full max-w-5xl text-center">
+            <Kicker tone="text-indigo-300">Punkt {currentIdx + 1} · {ITEM_KIND[currentItem.item_type] ?? 'Porządek obrad'}</Kicker>
+            <div className="mt-5 text-6xl font-semibold leading-tight tracking-tight">{currentItem.title}</div>
+            {currentItem.description && (
+              <p className="mx-auto mt-8 max-w-4xl whitespace-pre-wrap text-2xl leading-relaxed text-zinc-400">{currentItem.description}</p>
+            )}
+          </div>
+        ) : lastResult && !lastResult.results_announced_at ? (
+          <PendingAnnouncement vote={lastResult} isAuditor={false} size="lg" />
         ) : lastResult && lastResult.vote_kind === 'election' ? (
           <div className="w-full max-w-4xl text-center">
             <Kicker tone="text-zinc-500">Wynik wyborów</Kicker>

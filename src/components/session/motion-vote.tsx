@@ -130,7 +130,7 @@ export function MotionVoteCard({
       {isChair && (
         <button onClick={onClose}
           className="mt-4 w-full rounded-2xl border border-indigo-600 py-2.5 text-sm text-indigo-300 hover:bg-indigo-900/30 transition-colors">
-          Zamknij głosowanie i pokaż wynik
+          Zakończ głosowanie
         </button>
       )}
     </div>

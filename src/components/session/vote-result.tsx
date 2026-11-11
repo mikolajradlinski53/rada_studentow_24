@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { fetchNamedBallots, type NamedBallot } from '@/lib/use-live-session';
+import { fetchNamedBallots, fetchElectionResults, type NamedBallot } from '@/lib/use-live-session';
+import { failed } from '@/lib/notify';
 import { TallyBar, RESULT_TONE, resultLabel, choiceLabels } from '@/components/session/tally';
-import type { BallotChoice, Vote } from '@/types/database';
+import type { BallotChoice, ElectionResult, Vote } from '@/types/database';
 
 const GROUPS: { choice: BallotChoice; title: string; tone: string }[] = [
   { choice: 'for', title: 'Za', tone: 'text-emerald-300' },
@@ -130,6 +131,94 @@ export function NamedBreakdownToggle({ voteId, opinion = false }: { voteId: stri
         Kto jak głosował <ChevronDown className={clsx('h-4 w-4 transition-transform', open && 'rotate-180')} />
       </button>
       {open && <div className="mt-2"><NamedBreakdown voteId={voteId} opinion={opinion} /></div>}
+    </div>
+  );
+}
+
+type Pending = { votes_for: number; votes_against: number; votes_abstain: number; total_eligible: number; result: NonNullable<Vote['result']> };
+
+/**
+ * A vote the chair ended but the KR hasn't announced yet (migration 039).
+ * Everyone sees that it's waiting; a KR member sees the result privately,
+ * checks it and announces it - only then does it reach the room.
+ */
+export function PendingAnnouncement({ vote, isAuditor, size = 'sm' }: { vote: Vote; isAuditor: boolean; size?: 'sm' | 'lg' }) {
+  const [pending, setPending] = useState<{ voteId: string; row: Pending | null; election: ElectionResult[] } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const election = vote.vote_kind === 'election';
+  const what = election ? 'Wybory zakończone' : vote.vote_kind === 'opinion' ? 'Opiniowanie zakończone' : 'Głosowanie zakończone';
+  const title = vote.title.replace(/^(Głosowanie|Opinia|Wybory):\s*/i, '');
+
+  useEffect(() => {
+    if (!isAuditor) return;
+    let live = true;
+    const supabase = createClient();
+    (election
+      ? fetchElectionResults(supabase, vote).then((rows) => ({ row: null, election: rows }))
+      : supabase.from('vote_pending_results').select('*').eq('vote_id', vote.id).maybeSingle()
+          .then(({ data }) => ({ row: (data as Pending | null) ?? null, election: [] as ElectionResult[] }))
+    ).then((r) => { if (live) setPending({ voteId: vote.id, ...r }); });
+    return () => { live = false; };
+  }, [isAuditor, election, vote]);
+
+  const announce = async () => {
+    if (!confirm('Ogłosić wyniki? Zobaczą je wszyscy, także na rzutniku.')) return;
+    setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc('announce_vote_results', { p_vote_id: vote.id });
+    setBusy(false);
+    if (failed(error, error?.message?.includes('already_announced') ? 'Wyniki zostały już ogłoszone.' : 'Nie udało się ogłosić wyników.')) return;
+    void supabase.rpc('log_audit', { p_action: 'vote.announced', p_target_type: 'vote', p_target_id: vote.id, p_metadata: {} });
+  };
+
+  if (size === 'lg') {
+    return (
+      <div className="text-center">
+        <div className="text-xl font-medium uppercase tracking-[0.2em] text-zinc-500">{what}</div>
+        <div className="mx-auto mt-3 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-zinc-200">{title}</div>
+        <div className="mt-10 inline-flex items-center gap-3 rounded-[2rem] px-12 py-6 text-4xl font-semibold text-amber-200 ring-2 ring-amber-500/40 bg-amber-500/10">
+          <ShieldCheck className="h-10 w-10" /> Wyniki ogłosi Komisja Rewizyjna
+        </div>
+      </div>
+    );
+  }
+
+  const row = pending?.voteId === vote.id ? pending.row : null;
+  const labels = choiceLabels(vote.vote_kind);
+  return (
+    <div className="rounded-2xl border border-amber-800/60 bg-amber-950/15 p-4 sm:p-5">
+      <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-amber-300">
+        <ShieldCheck className="h-4 w-4" /> {what}
+      </div>
+      <p className="mt-2 text-[17px] font-semibold leading-snug text-zinc-100 [overflow-wrap:anywhere]">{title}</p>
+      {!isAuditor ? (
+        <p className="mt-2 text-[14px] text-zinc-400">Oddano {vote.secret_cast_count} głosów. Wyniki ogłosi Komisja Rewizyjna.</p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <p className="text-[13px] text-zinc-400">Widzisz wynik jako Komisja Rewizyjna. Sprawdź go i ogłoś; do tego czasu nikt inny go nie zna.</p>
+          {election ? (
+            <div className="space-y-1 rounded-xl bg-zinc-900/60 p-3 ring-1 ring-zinc-800">
+              {(pending?.voteId === vote.id ? pending.election : []).map((r) => (
+                <div key={r.candidate.id} className="flex justify-between text-[14px]">
+                  <span className={r.elected ? 'font-semibold text-amber-200' : 'text-zinc-300'}>{r.candidate.name}{r.elected ? ' · wybrany/a' : ''}</span>
+                  <span className="tabular-nums text-zinc-400">{r.count}</span>
+                </div>
+              ))}
+            </div>
+          ) : row ? (
+            <div className="rounded-xl bg-zinc-900/60 p-3 ring-1 ring-zinc-800 text-[14px] tabular-nums text-zinc-200">
+              {labels.for.toLowerCase()} {row.votes_for} · {labels.against.toLowerCase()} {row.votes_against} · wstrzymało się {row.votes_abstain}
+              <span className={clsx('ml-2 rounded-full px-2 py-0.5 text-xs font-medium', RESULT_TONE[row.result])}>{resultLabel({ result: row.result, vote_kind: vote.vote_kind })}</span>
+            </div>
+          ) : (
+            <p className="text-[13px] text-zinc-500">Wczytywanie wyniku…</p>
+          )}
+          <button onClick={announce} disabled={busy}
+            className="press h-12 w-full rounded-xl bg-amber-600 text-[15px] font-semibold text-white hover:bg-amber-500 disabled:opacity-50">
+            {busy ? 'Ogłaszanie…' : 'Ogłoś wyniki'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

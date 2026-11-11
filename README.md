@@ -126,6 +126,9 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 035_resolution_lock_and_log.sql — wersja EN uchwał (brakująca 013); opublikowana uchwała jest ostateczna (tylko uchylenie); każda zmiana w logach
 036_fix_resolution_log.sql — poprawka zapisu zmian uchwał w logach
 037_agenda_vote_type.sql — jawność/tajność ustalana z góry w porządku obrad; głosowanie musi być zgodne z punktem
+038_live_state_rpc.sql — funkcja live_state (zastosowana w bazie, aplikacja jej nie używa)
+039_kr_announces_results.sql — prowadzący kończy głosowanie, wyniki ogłasza Komisja Rewizyjna
+040_floor_request_limits.sql — limity zgłoszeń do głosu (jedno aktywne, 3/min, ad vocem tylko w trakcie cudzej wypowiedzi)
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

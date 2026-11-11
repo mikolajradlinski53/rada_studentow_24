@@ -182,6 +182,9 @@ export interface Vote {
   /** Chair's casting vote on a tie. */
   deciding_vote?: 'for' | 'against' | null;
   deciding_by?: string | null;
+  /** Set when the KR announced the result (migration 039); null = ended, waiting for the KR. */
+  results_announced_at?: string | null;
+  announced_by?: string | null;
   created_at: string;
   // Joined
   ballots?: Ballot[];

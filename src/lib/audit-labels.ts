@@ -6,6 +6,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'vote.opened': 'Otwarto głosowanie',
   'vote.closed': 'Zamknięto głosowanie',
   'vote.decided': 'Głos rozstrzygający przewodniczącego',
+  'vote.announced': 'Komisja Rewizyjna ogłosiła wyniki',
   'ballot.cast': 'Oddano głos',
   'attendance.checked_in': 'Potwierdzono obecność',
   'protocol.generated': 'Wygenerowano protokół',

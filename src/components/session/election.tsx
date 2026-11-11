@@ -11,7 +11,7 @@ import type { AgendaItem, Vote, VoteCandidate, Mandate, ElectionResult, BallotCh
 const now = () => new Date().toISOString();
 
 /** Chair: open an election on an agenda item (enter candidates + seats). */
-export function ElectionOpener({ sessionId, item }: { sessionId: string; item: AgendaItem }) {
+export function ElectionOpener({ sessionId, item, onOpened }: { sessionId: string; item: AgendaItem; onOpened?: () => void }) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
@@ -41,6 +41,7 @@ export function ElectionOpener({ sessionId, item }: { sessionId: string; item: A
       if (failed(ce, 'Nie udało się zapisać kandydatów. Zamknij to głosowanie i otwórz wybory ponownie.')) { setBusy(false); return; }
       await supabase.rpc('log_audit', { p_action: 'vote.opened', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { kind: 'election' } });
       broadcastPush('vote_opened', vote.id); // after candidates exist, so the tap lands on a full ballot
+      onOpened?.(); // the item becomes the current one, so the chair can end it later
     }
     setBusy(false); setOpen(false); setText('');
   };
@@ -107,8 +108,9 @@ export function ElectionActive({
   };
 
   const close = async () => {
-    const { error } = await supabase.from('votes').update({ status: 'closed', closed_at: now() }).eq('id', vote.id);
-    if (failed(error, 'Nie udało się zamknąć wyborów.')) return;
+    // Ends the election; with a KR the results wait for its announcement (migration 039).
+    const { error } = await supabase.rpc('tally_vote', { p_vote_id: vote.id });
+    if (failed(error, 'Nie udało się zakończyć wyborów.')) return;
     await supabase.rpc('log_audit', { p_action: 'vote.closed', p_target_type: 'vote', p_target_id: vote.id, p_metadata: { kind: 'election' } });
   };
 
@@ -156,7 +158,7 @@ export function ElectionActive({
       {isChair && (
         <button onClick={close}
           className="mt-4 w-full rounded-xl border border-amber-600 py-2 text-sm text-amber-300 hover:bg-amber-900/30 transition-colors">
-          Zamknij wybory i pokaż wynik
+          Zakończ wybory
         </button>
       )}
     </div>

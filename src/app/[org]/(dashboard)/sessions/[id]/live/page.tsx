@@ -16,7 +16,7 @@ import { PendingVoters } from '@/components/session/pending-voters';
 import { AgendaComments } from '@/components/session/agenda-comments';
 import { NotificationNudge } from '@/components/pwa/notification-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClosedVoteCard, NamedBreakdownToggle } from '@/components/session/vote-result';
+import { ClosedVoteCard, NamedBreakdownToggle, PendingAnnouncement } from '@/components/session/vote-result';
 import { Check, MonitorUp, Square, X } from 'lucide-react';
 import { broadcastPush } from '@/lib/push-client';
 import { useWakeLock } from '@/lib/use-wake-lock';
@@ -62,6 +62,21 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
     lastVoteId.current = id;
   }, [activeVote?.id, loading]);
 
+  // Follow the chair: when a new agenda item starts, bring it into view on every
+  // phone/computer (unless a ballot is open - that card has priority).
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const currentItemId = agendaItems.find((i) => i.status === 'in_progress')?.id ?? null;
+  const lastItemId = useRef<string | null | undefined>(undefined);
+  const hasActiveVote = !!activeVote;
+  useEffect(() => {
+    if (loading) return;
+    if (lastItemId.current !== undefined && currentItemId && currentItemId !== lastItemId.current && !hasActiveVote) {
+      navigator.vibrate?.(30);
+      itemRefs.current[currentItemId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    lastItemId.current = currentItemId;
+  }, [currentItemId, loading, hasActiveVote]);
+
   // === ACTIONS ===
   const checkIn = async () => {
     if (!myMandate) return;
@@ -80,7 +95,9 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         .eq('session_id', sessionId).eq('status', 'in_progress').neq('id', item.id);
       if (failed(e1, 'Nie udało się zakończyć poprzedniego punktu.')) return;
     }
-    const { error } = await supabase.from('agenda_items').update({ status }).eq('id', item.id);
+    const at = new Date().toISOString();
+    const { error } = await supabase.from('agenda_items')
+      .update(status === 'in_progress' ? { status, started_at: at } : { status, ended_at: at }).eq('id', item.id);
     if (failed(error, 'Nie udało się zmienić punktu porządku obrad.')) return;
     void refetch();
   };
@@ -173,7 +190,12 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
   const nameByMandate = new Map(
     attendance.map((a) => [a.mandate_id, a.mandate?.profile?.full_name ?? '-'])
   );
-  const lastMotion = closedVotes.find((v) => v.vote_kind !== 'election') ?? null;
+  // Ended but not yet announced by the KR (migration 039) vs announced results.
+  const pendingVotes = closedVotes.filter((v) => !v.results_announced_at);
+  const lastMotion = closedVotes.find((v) => v.vote_kind !== 'election' && !!v.results_announced_at) ?? null;
+  const isAuditor = isPlatformAdmin || myMandate?.role === 'auditor';
+  const currentItem = agendaItems.find((i) => i.status === 'in_progress') ?? null;
+  const currentIdx = currentItem ? agendaItems.indexOf(currentItem) : -1;
 
   return (
     <div className="space-y-6">
@@ -250,6 +272,15 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         )}
       </div>
 
+      {/* Current agenda item, follows the chair; tap to jump to it */}
+      {currentItem && !activeVote && (
+        <button onClick={() => itemRefs.current[currentItem.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          className="press sticky top-2 z-10 flex w-full items-center gap-2.5 rounded-2xl border border-indigo-600 bg-indigo-950/90 px-4 py-3 text-left shadow-lg backdrop-blur">
+          <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-semibold text-white">Teraz</span>
+          <span className="min-w-0 truncate text-[15px] font-medium text-zinc-100">{currentIdx + 1}. {currentItem.title}</span>
+        </button>
+      )}
+
       {/* Active vote — right under attendance, the one thing a member is here for */}
       {activeVote && (
         <div ref={voteCardRef} className="scroll-mt-4">
@@ -285,6 +316,11 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
           )}
         </div>
       )}
+
+      {/* Ended, waiting for the KR to announce (the KR sees the result + 'Ogłoś wyniki') */}
+      {!activeVote && pendingVotes.map((v) => (
+        <PendingAnnouncement key={v.id} vote={v} isAuditor={isAuditor} />
+      ))}
 
       {/* Just closed: the numbers, then who voted how (open votes) */}
       {!activeVote && lastMotion && lastMotion.id !== dismissedId && (
@@ -325,8 +361,8 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
         <h2 className="text-sm font-medium text-zinc-400 mb-3">Porządek obrad</h2>
         <div className="space-y-1.5">
           {agendaItems.map((item, idx) => (
-            <div key={item.id}
-              className={clsx('rounded-2xl border px-4 py-3',
+            <div key={item.id} ref={(el) => { itemRefs.current[item.id] = el; }}
+              className={clsx('scroll-mt-20 rounded-2xl border px-4 py-3 transition-colors duration-500',
                 item.status === 'in_progress' ? 'border-indigo-600 bg-indigo-950/20'
                   : item.status === 'completed' ? 'border-zinc-800 bg-zinc-900/30 opacity-60'
                   : 'border-zinc-800 bg-zinc-900/50')}>
@@ -367,7 +403,8 @@ export default function LiveSessionPage({ params }: { params: Promise<{ org: str
                   </div>
                 )}
                 {isChair && !activeVote && item.status !== 'completed' && item.item_type === 'election' && (
-                  <ElectionOpener sessionId={sessionId} item={item} />
+                  <ElectionOpener sessionId={sessionId} item={item}
+                    onOpened={() => { if (item.status !== 'in_progress') void setItemStatus(item, 'in_progress'); }} />
                 )}
               </div>
               <div className="pl-7">
@@ -390,7 +427,9 @@ function VoteResults({ votes }: { votes: Vote[] }) {
   if (!votes.length) return null;
   return (
     <div className="mt-2 space-y-1.5">
-      {votes.map((v) => v.vote_kind === 'election' ? (
+      {votes.map((v) => !v.results_announced_at ? (
+        <div key={v.id} className="pl-7 text-xs text-amber-300">Zakończone · wyniki ogłosi Komisja Rewizyjna</div>
+      ) : v.vote_kind === 'election' ? (
         <div key={v.id}>
           <div className="pl-7 text-xs font-medium text-amber-300">Wynik wyborów ({v.secret_cast_count} głosów)</div>
           <ElectionResultRow vote={v} />
@@ -416,7 +455,12 @@ function PastVotesSection({ votes }: { votes: Vote[] }) {
     <div>
       <h2 className="text-sm font-medium text-zinc-400 mb-3">Zakończone głosowania</h2>
       <div className="space-y-1.5">
-        {votes.map((v) => v.vote_kind === 'election' ? (
+        {votes.map((v) => !v.results_announced_at ? (
+          <div key={v.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+            <div className="min-w-0 text-sm text-zinc-300">{v.title.replace(/^(Głosowanie|Opinia|Wybory):\s*/i, '')}</div>
+            <span className="shrink-0 rounded-full bg-amber-900/50 px-2 py-0.5 text-xs font-medium text-amber-300">Oczekuje na KR</span>
+          </div>
+        ) : v.vote_kind === 'election' ? (
           <div key={v.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-zinc-300">{v.title}</div>

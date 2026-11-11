@@ -67,7 +67,14 @@ export function Discussion({
       minutes: opts?.minutes ?? null,
       note: opts?.note?.trim() || null,
     });
-    failed(error, 'Nie udało się zgłosić do głosu.');
+    // Anti-spam limits live in the DB (migration 040); say which one applied.
+    const m = error?.message ?? '';
+    failed(error,
+      m.includes('floor_already_requested') ? 'Masz już takie zgłoszenie w kolejce.'
+        : m.includes('floor_too_many_requests') ? 'Za dużo zgłoszeń w krótkim czasie. Spróbuj za minutę.'
+        : m.includes('ad_vocem_needs_other_speaker') ? 'Ad vocem można zgłosić tylko w trakcie wypowiedzi innej osoby.'
+        : m.includes('ad_vocem_once_per_speech') ? 'Ad vocem do tej wypowiedzi już zgłaszałeś/aś.'
+        : 'Nie udało się zgłosić do głosu.');
   };
   const withdraw = async (id: string) => {
     const { error } = await supabase.from('floor_requests').update({ status: 'withdrawn' }).eq('id', id);
