@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { Check, Clock, EyeOff, Lock, Trash2, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeTopic } from '@/lib/realtime';
 import { failed } from '@/lib/notify';
 
 export type Poll = {
@@ -50,11 +51,8 @@ export function PollCard({ poll, myMandateId, canManage, voters }: { poll: Poll;
   useEffect(() => {
     const t = setTimeout(() => { void load(); }, 0);
     const supabase = createClient();
-    const channel = supabase
-      .channel(`poll-${poll.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_answers', filter: `poll_id=eq.${poll.id}` }, () => { void load(); })
-      .subscribe();
-    return () => { clearTimeout(t); supabase.removeChannel(channel); };
+    const unsubscribe = subscribeTopic(supabase, `poll:${poll.id}`, () => { void load(); });
+    return () => { clearTimeout(t); unsubscribe(); };
   }, [poll.id, load]);
 
   const closed = now ? isClosed(poll, now) : !!poll.closed_at;

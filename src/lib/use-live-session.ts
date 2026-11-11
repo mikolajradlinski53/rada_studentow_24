@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { isVotingRole } from '@/lib/roles';
+import { subscribeTopic } from '@/lib/realtime';
 import type {
   Session, AgendaItem, Vote, Attendance, Mandate, Profile, FloorRequest,
   VoteCandidate, ElectionResult, BallotChoice, QuorumInfo,
@@ -217,18 +218,15 @@ export function useLiveSession(sessionId: string): LiveSessionData {
       seq.current++;
       setAgendaItems((cur) => cur.map((x) => (x.id === it.id ? { ...x, ...it } : x)));
     };
-    // No `ballots` subscription: every ballot also bumps votes.secret_cast_count,
-    // which the votes listener already catches (and others' ballots are hidden while open).
-    const channel = supabase
-      .channel(`session-${sessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `session_id=eq.${sessionId}` }, (p) => { applyVote(p.new as Vote); kick(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `session_id=eq.${sessionId}` }, kick)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items', filter: `session_id=eq.${sessionId}` }, (p) => { applyItem(p.new as AgendaItem); kick(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_requests', filter: `session_id=eq.${sessionId}` }, kick)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, kick)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_candidates' }, kick)
-      .subscribe();
-    return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+    // One private Broadcast topic per sitting, fed by DB triggers (migration 041):
+    // votes / agenda items carry their row (fast path), the rest is a "changed"
+    // signal. Every ballot bumps votes.secret_cast_count, so turnout arrives as 'vote'.
+    const unsubscribe = subscribeTopic(supabase, `session:${sessionId}`, (event, payload) => {
+      if (event === 'vote' && payload.op !== 'DELETE') applyVote(payload.row as unknown as Vote);
+      if (event === 'agenda_item' && payload.op !== 'DELETE') applyItem(payload.row as unknown as AgendaItem);
+      kick();
+    });
+    return () => { clearTimeout(timer); unsubscribe(); };
   }, [sessionId, supabase, refetch]);
 
   // Seat holders only - matches calculate_quorum (KR / protokolant don't count).

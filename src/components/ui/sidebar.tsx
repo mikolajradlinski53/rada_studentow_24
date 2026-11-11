@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { BarChart3, CalendarDays, FileText, ShieldCheck, Settings, UserRound, Vote } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeTopic } from '@/lib/realtime';
 import type { Role, OrgModule } from '@/types/database';
 
 type NavItem = {
@@ -69,11 +70,7 @@ function useLiveSessionId(organId: string) {
         .order('opened_at', { ascending: false }).limit(1).maybeSingle()
         .then(({ data }) => setLiveId(data?.id ?? null));
     load();
-    const channel = supabase
-      .channel(`organ-live-${organId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `organ_id=eq.${organId}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return subscribeTopic(supabase, `organ:${organId}`, () => { void load(); });
   }, [organId]);
 
   return liveId;

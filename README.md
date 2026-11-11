@@ -129,6 +129,7 @@ Alternatywnie w Supabase **SQL Editor** uruchom po kolei (idempotentne):
 038_live_state_rpc.sql — funkcja live_state (zastosowana w bazie, aplikacja jej nie używa)
 039_kr_announces_results.sql — prowadzący kończy głosowanie, wyniki ogłasza Komisja Rewizyjna
 040_floor_request_limits.sql — limity zgłoszeń do głosu (jedno aktywne, 3/min, ad vocem tylko w trakcie cudzej wypowiedzi)
+041_realtime_broadcast.sql — realtime przez prywatne kanały Broadcast (wyzwalacze w bazie) zamiast postgres_changes
 ```
 
 Następnie **`supabase/seed.sql`** (ustaw w nim email bootstrap-admina) — tworzy

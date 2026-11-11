@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { ChevronDown, MessageCircle, Send, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeTopic } from '@/lib/realtime';
 
 type Comment = {
   id: string;
@@ -43,11 +44,7 @@ export function AgendaComments({
     const load = () => supabase.from('agenda_comments').select(SELECT).eq('agenda_item_id', itemId).order('created_at')
       .then(({ data }) => { setComments((data as unknown as Comment[]) ?? []); setNow(Date.now()); });
     load();
-    const channel = supabase
-      .channel(`agenda-comments-${itemId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_comments', filter: `agenda_item_id=eq.${itemId}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return subscribeTopic(supabase, `comments:${itemId}`, () => { void load(); });
   }, [itemId]);
 
   const send = async () => {

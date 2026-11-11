@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { Check, ChevronDown, UserCheck, UserX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeTopic } from '@/lib/realtime';
 import type { SessionRsvp } from '@/types/database';
 
 type RosterEntry = { mandateId: string; name: string };
@@ -32,14 +33,10 @@ export function SessionRsvpCard({
   // Live: others' answers appear without reload.
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`rsvp-${sessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_rsvps', filter: `session_id=eq.${sessionId}` }, () => {
-        supabase.from('session_rsvps').select('*').eq('session_id', sessionId)
-          .then(({ data }) => setRows((data as SessionRsvp[]) ?? []));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return subscribeTopic(supabase, `rsvp:${sessionId}`, () => {
+      supabase.from('session_rsvps').select('*').eq('session_id', sessionId)
+        .then(({ data }) => setRows((data as SessionRsvp[]) ?? []));
+    });
   }, [sessionId]);
 
   const mine = rows.find((r) => r.mandate_id === myMandateId) ?? null;
